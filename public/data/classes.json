@@ -1,0 +1,128 @@
+[
+  {
+    "id": "marauder",
+    "name": "Дикарь",
+    "short": "ДК",
+    "fantasy": "Сила и несокрушимость",
+    "stats": "Сила",
+    "styles": [
+      "melee",
+      "totems",
+      "elemental"
+    ],
+    "ascendancies": {
+      "melee": "Джаггернаут",
+      "totems": "Вождь",
+      "elemental": "Вождь"
+    },
+    "passiveFocus": "максимум здоровья, броня, урон двуручным оружием"
+  },
+  {
+    "id": "ranger",
+    "name": "Охотница",
+    "short": "ОХ",
+    "fantasy": "Скорость и точность",
+    "stats": "Ловкость",
+    "styles": [
+      "ranged",
+      "elemental",
+      "poison"
+    ],
+    "ascendancies": {
+      "ranged": "Снайпер",
+      "elemental": "Снайпер",
+      "poison": "Следопыт"
+    },
+    "passiveFocus": "скорость атаки, уклонение, урон снарядами"
+  },
+  {
+    "id": "witch",
+    "name": "Ведьма",
+    "short": "ВД",
+    "fantasy": "Колдовство и приспешники",
+    "stats": "Интеллект",
+    "styles": [
+      "spells",
+      "minions",
+      "elemental"
+    ],
+    "ascendancies": {
+      "spells": "Оккультист",
+      "minions": "Некромант",
+      "elemental": "Заклинатель стихий"
+    },
+    "passiveFocus": "урон чарами, энергетический щит, регенерация маны"
+  },
+  {
+    "id": "duelist",
+    "name": "Гладиатор",
+    "short": "ГЛ",
+    "fantasy": "Напор и мастерство оружия",
+    "stats": "Сила · Ловкость",
+    "styles": [
+      "melee",
+      "ranged",
+      "bleed"
+    ],
+    "ascendancies": {
+      "melee": "Рубака",
+      "ranged": "Чемпион",
+      "bleed": "Гладиатор"
+    },
+    "passiveFocus": "физический урон, похищение здоровья, скорость атаки"
+  },
+  {
+    "id": "templar",
+    "name": "Жрец",
+    "short": "ЖР",
+    "fantasy": "Вера и сила стихий",
+    "stats": "Сила · Интеллект",
+    "styles": [
+      "spells",
+      "totems",
+      "minions"
+    ],
+    "ascendancies": {
+      "spells": "Инквизитор",
+      "totems": "Иерофант",
+      "minions": "Страж"
+    },
+    "passiveFocus": "стихийный урон, здоровье, эффективность аур"
+  },
+  {
+    "id": "shadow",
+    "name": "Бандит",
+    "short": "БН",
+    "fantasy": "Ловушки и быстрые удары",
+    "stats": "Ловкость · Интеллект",
+    "styles": [
+      "traps",
+      "spells",
+      "poison"
+    ],
+    "ascendancies": {
+      "traps": "Диверсант",
+      "spells": "Хитрец",
+      "poison": "Убийца"
+    },
+    "passiveFocus": "шанс критического удара, уклонение, подавление чар"
+  },
+  {
+    "id": "scion",
+    "name": "Дворянка",
+    "short": "ДВ",
+    "fantasy": "Свобода и гибридные сборки",
+    "stats": "Все характеристики",
+    "styles": [
+      "hybrid",
+      "spells",
+      "melee"
+    ],
+    "ascendancies": {
+      "hybrid": "Вознесшаяся",
+      "spells": "Вознесшаяся",
+      "melee": "Вознесшаяся"
+    },
+    "passiveFocus": "жизнь, универсальный урон, доступ к ключевым узлам"
+  }
+]
