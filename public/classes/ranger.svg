@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">Охотница</title>
+  <defs>
+    <linearGradient id="r-bg" x1="29" y1="17" x2="225" y2="240" gradientUnits="userSpaceOnUse"><stop stop-color="#205c50"/><stop offset="1" stop-color="#132521"/></linearGradient>
+    <linearGradient id="r-hood" x1="94" y1="29" x2="161" y2="190" gradientUnits="userSpaceOnUse"><stop stop-color="#7da74f"/><stop offset="1" stop-color="#315c3c"/></linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="28" fill="url(#r-bg)"/>
+  <path d="M24 52l58-34-21 59zm208 2-57-35 20 60z" fill="#9acb69" opacity=".14"/>
+  <path d="M21 256c5-53 42-84 84-91h47c43 7 78 38 84 91z" fill="#233932"/>
+  <path d="M81 165l31-14h34l30 14-13 91H94z" fill="#476b4a"/>
+  <path d="M101 139h54v45c-18 17-36 17-54 0z" fill="#b97355"/>
+  <path d="M89 82c4-36 19-57 40-57 26 0 45 24 44 62l-8 55-27 27h-21l-27-28z" fill="#d99973"/>
+  <path d="M73 103c2-52 21-85 57-85 35 0 55 36 54 86l-20-20c-18-17-49-21-74 2z" fill="url(#r-hood)"/>
+  <path d="M84 91c19-23 56-30 83 1-10-7-16-11-22-14-19 11-40 17-61 13z" fill="#5f823d"/>
+  <path d="M98 113l20 3-16 7zm60 0-20 3 16 7z" fill="#26352a"/>
+  <path d="M117 144h24" stroke="#854c3f" stroke-width="5" stroke-linecap="round"/>
+  <path d="M165 82c23 29 23 76 5 108" fill="none" stroke="#b58555" stroke-width="9" stroke-linecap="round"/>
+  <path d="M168 101l14 12-15 10 14 13-15 11 11 14" fill="none" stroke="#d9a46f" stroke-width="4"/>
+  <path d="M78 176l-36 22 16 58h41l12-83zm100 0 36 22-16 58h-41l-11-83z" fill="#6f8b58"/>
+</svg>

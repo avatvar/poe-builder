@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">Ведьма</title>
+  <defs>
+    <linearGradient id="w-bg" x1="22" y1="17" x2="231" y2="241" gradientUnits="userSpaceOnUse"><stop stop-color="#452b68"/><stop offset="1" stop-color="#171622"/></linearGradient>
+    <linearGradient id="w-hair" x1="83" y1="30" x2="176" y2="210" gradientUnits="userSpaceOnUse"><stop stop-color="#d8d5e8"/><stop offset="1" stop-color="#716b91"/></linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="28" fill="url(#w-bg)"/>
+  <circle cx="205" cy="49" r="34" fill="#c189ff" opacity=".16"/>
+  <path d="M205 16v66M172 49h66" stroke="#d8b5ff" stroke-width="2" opacity=".4"/>
+  <path d="M18 256c8-51 43-79 88-89h44c45 10 80 38 88 89z" fill="#242033"/>
+  <path d="M78 256l11-90 36-17 43 17 11 90z" fill="#594875"/>
+  <path d="M102 140h53v43c-17 17-36 17-53 0z" fill="#aa746d"/>
+  <path d="M87 86c0-38 16-63 42-63 27 0 44 26 43 64l-7 55-27 28h-20l-27-28z" fill="#d7a091"/>
+  <path d="M78 104c0-53 18-88 51-88 37 0 57 37 52 101l-16 66-13-44 9-62c-19 1-45-10-57-26-8 18-11 46-7 77l-7 54-15-64z" fill="url(#w-hair)"/>
+  <path d="M96 112l21 4-17 7zm62 0-21 4 17 7z" fill="#433257"/>
+  <path d="M105 118l11-2m22 0 11 2" stroke="#a887ff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M117 145h23" stroke="#87545c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M90 166l-44 30 17 60h39l20-98zm77 0 43 30-17 60h-39l-19-98z" fill="#68528a"/>
+  <path d="M128 188l8 15 17 3-12 12 3 17-16-8-16 8 3-17-12-12 17-3z" fill="#c698ff" opacity=".8"/>
+</svg>

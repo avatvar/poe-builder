@@ -3,6 +3,7 @@
     "id": "marauder",
     "name": "Дикарь",
     "short": "ДК",
+    "image": "classes/marauder.svg",
     "fantasy": "Сила и несокрушимость",
     "stats": "Сила",
     "styles": [
@@ -21,6 +22,7 @@
     "id": "ranger",
     "name": "Охотница",
     "short": "ОХ",
+    "image": "classes/ranger.svg",
     "fantasy": "Скорость и точность",
     "stats": "Ловкость",
     "styles": [
@@ -39,6 +41,7 @@
     "id": "witch",
     "name": "Ведьма",
     "short": "ВД",
+    "image": "classes/witch.svg",
     "fantasy": "Колдовство и приспешники",
     "stats": "Интеллект",
     "styles": [
@@ -57,6 +60,7 @@
     "id": "duelist",
     "name": "Гладиатор",
     "short": "ГЛ",
+    "image": "classes/duelist.svg",
     "fantasy": "Напор и мастерство оружия",
     "stats": "Сила · Ловкость",
     "styles": [
@@ -75,6 +79,7 @@
     "id": "templar",
     "name": "Жрец",
     "short": "ЖР",
+    "image": "classes/templar.svg",
     "fantasy": "Вера и сила стихий",
     "stats": "Сила · Интеллект",
     "styles": [
@@ -93,6 +98,7 @@
     "id": "shadow",
     "name": "Бандит",
     "short": "БН",
+    "image": "classes/shadow.svg",
     "fantasy": "Ловушки и быстрые удары",
     "stats": "Ловкость · Интеллект",
     "styles": [
@@ -111,6 +117,7 @@
     "id": "scion",
     "name": "Дворянка",
     "short": "ДВ",
+    "image": "classes/scion.svg",
     "fantasy": "Свобода и гибридные сборки",
     "stats": "Все характеристики",
     "styles": [

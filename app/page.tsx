@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -11,6 +12,7 @@ type ClassOption = {
   id: ClassId;
   name: string;
   short: string;
+  image: string;
   fantasy: string;
   stats: string;
   styles: StyleId[];
@@ -282,7 +284,7 @@ export default function Home() {
 
         {loadState === "ready" && catalog && selectedClass && selectedStyle && (
           <div className="builder-card">
-            <div className="builder-step"><div className="step-heading"><span className="step-number">01</span><div><h3>Выбери класс</h3><p>Он определит стартовую точку на дереве умений</p></div></div><div className="class-grid" role="group" aria-label="Выбор класса">{catalog.classes.map((item) => <button key={item.id} type="button" className={`class-option ${classId === item.id ? "is-selected" : ""}`} onClick={() => chooseClass(item)} aria-pressed={classId === item.id}><span className="class-monogram">{item.short}</span><span><strong>{item.name}</strong><small>{item.stats}</small></span><i aria-hidden="true">✓</i></button>)}</div></div>
+            <div className="builder-step"><div className="step-heading"><span className="step-number">01</span><div><h3>Выбери класс</h3><p>Он определит стартовую точку на дереве умений</p></div></div><div className="class-grid" role="group" aria-label="Выбор класса">{catalog.classes.map((item) => <button key={item.id} type="button" className={`class-option ${classId === item.id ? "is-selected" : ""}`} onClick={() => chooseClass(item)} aria-pressed={classId === item.id}><Image className="class-portrait" src={item.image} alt="" width={256} height={256} draggable={false} unoptimized /><span><strong>{item.name}</strong><small>{item.stats}</small></span><i aria-hidden="true">✓</i></button>)}</div></div>
             <div className="builder-divider" />
             <div className="builder-step"><div className="step-heading"><span className="step-number">02</span><div><h3>Выбери стиль игры</h3><p>Доступные варианты хорошо сочетаются с классом</p></div></div><div className="style-grid" role="group" aria-label="Выбор стиля игры">{selectedClass.styles.map((id) => { const style = catalog.styles[id]; return <button key={id} type="button" className={`style-option ${styleId === id ? "is-selected" : ""}`} onClick={() => chooseStyle(id)} aria-pressed={styleId === id} style={{ "--style-color": style.color } as CSSProperties}><span className="style-dot" /><span><strong>{style.name}</strong><small>{style.description}</small></span><span className="difficulty">{style.difficulty}</span></button>; })}</div></div>
             <div className="builder-divider" />

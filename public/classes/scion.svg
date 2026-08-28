@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
+  <title id="title">Дворянка</title>
+  <defs>
+    <linearGradient id="c-bg" x1="21" y1="17" x2="234" y2="241" gradientUnits="userSpaceOnUse"><stop stop-color="#8a4b57"/><stop offset="1" stop-color="#251b26"/></linearGradient>
+    <linearGradient id="c-hair" x1="81" y1="24" x2="176" y2="211" gradientUnits="userSpaceOnUse"><stop stop-color="#f0d9c5"/><stop offset="1" stop-color="#b57576"/></linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="28" fill="url(#c-bg)"/>
+  <circle cx="49" cy="47" r="31" fill="#ffc0a4" opacity=".12"/>
+  <path d="M49 21v52M23 47h52" stroke="#ffd4b7" stroke-width="2" opacity=".35"/>
+  <path d="M17 256c8-51 44-80 88-89h46c44 9 80 38 88 89z" fill="#352630"/>
+  <path d="M76 256l14-89 38-18 38 18 14 89z" fill="#874f66"/>
+  <path d="M102 139h53v45c-17 17-36 17-53 0z" fill="#b87967"/>
+  <path d="M86 85c1-38 18-63 43-63 27 0 45 26 43 65l-7 53-27 30h-20l-28-30z" fill="#dfa28b"/>
+  <path d="M78 111c-1-58 18-96 52-96 36 0 57 41 51 103l-16 67-9-48 8-58c-21 0-43-10-56-27-11 18-15 44-10 77l-7 57-16-67z" fill="url(#c-hair)"/>
+  <path d="M96 111l21 4-17 7zm62 0-21 4 17 7z" fill="#553646"/>
+  <path d="M116 145h25" stroke="#955b58" stroke-width="4" stroke-linecap="round"/>
+  <path d="M99 54c19 8 39 8 59 0" fill="none" stroke="#e6b767" stroke-width="6"/>
+  <path d="M128 46l7 9-7 10-7-10z" fill="#ffd87f"/>
+  <path d="M89 171l-47 29 16 56h43l23-103zm78 0 47 29-16 56h-43l-22-103z" fill="#9f6276"/>
+  <path d="M128 179l11 18 21 5-14 16 2 22-20-9-20 9 2-22-14-16 21-5z" fill="#e9b96b" opacity=".7"/>
+</svg>
