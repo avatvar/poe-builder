@@ -29,11 +29,12 @@ test("renders the Exile Path builder", async () => {
 
 test("keeps the build catalog in separate valid JSON files", async () => {
   const dataRoot = new URL("../public/data/", import.meta.url);
-  const [classes, styles, details, passives, gems, bosses, tools] = await Promise.all([
+  const [classes, styles, details, passives, masteries, gems, bosses, tools] = await Promise.all([
     readFile(new URL("classes.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("styles.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("stage-details.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("passive-guides.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("mastery-guides.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("gem-guides.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("boss-guides.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("support-tools.json", dataRoot), "utf8").then(JSON.parse),
@@ -43,6 +44,7 @@ test("keeps the build catalog in separate valid JSON files", async () => {
   assert.ok(Object.keys(styles).length >= 10);
   assert.deepEqual(Object.keys(details).sort(), Object.keys(styles).sort());
   assert.deepEqual(Object.keys(passives).sort(), Object.keys(styles).sort());
+  assert.deepEqual(Object.keys(masteries).sort(), classes.map((classOption) => classOption.id).sort());
   assert.deepEqual(Object.keys(gems).sort(), Object.keys(styles).sort());
   assert.deepEqual(Object.keys(bosses).sort(), Object.keys(styles).sort());
 
@@ -54,6 +56,14 @@ test("keeps the build catalog in separate valid JSON files", async () => {
     assert.equal(bosses[style.id].steps.length, 4);
     assert.equal(tools.flasks[style.id].length, 5);
     assert.ok(tools.recommendedAuras[style.id].length >= 3);
+  }
+
+  for (const classOption of classes) {
+    const guide = masteries[classOption.id];
+    assert.equal(guide.level, 75);
+    assert.equal(guide.core.length, 3);
+    assert.deepEqual(Object.keys(guide.styles).sort(), [...classOption.styles].sort());
+    for (const styleId of classOption.styles) assert.equal(guide.styles[styleId].length, 2);
   }
 });
 

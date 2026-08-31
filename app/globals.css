@@ -271,6 +271,17 @@ main { min-height: 100vh; overflow: hidden; }
 .passive-mini-route span { color: var(--accent); font-size: var(--font-small); font-weight: 900; }
 .passive-mini-route strong { font-size: var(--font-small); }
 .passive-mini-route small { color: var(--muted); font-size: var(--font-small); line-height: 1.5; }
+.mastery-summary { padding: 18px; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line)); border-radius: 12px 4px 12px 4px; background: var(--accent-soft); }
+.mastery-summary span { color: var(--accent); font-size: var(--font-small); font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.mastery-summary p { margin: 8px 0 0; color: var(--text); font-size: var(--font-body); line-height: 1.5; }
+.mastery-list { margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; list-style: none; }
+.mastery-list li { padding: 15px; display: flex; gap: 12px; border: 1px solid var(--line); border-radius: 10px 3px 10px 3px; background: var(--surface); }
+.mastery-list li > span { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--accent); font-size: var(--font-small); font-weight: 900; }
+.mastery-list li > div { min-width: 0; }
+.mastery-list strong { display: block; font-size: var(--font-body); }
+.mastery-list p { margin: 6px 0; color: var(--text); font-size: var(--font-small); line-height: 1.45; }
+.mastery-list small { display: block; color: var(--muted); font-size: var(--font-small); line-height: 1.5; }
+.mastery-list li:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .boss-steps { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; list-style: none; }
 .boss-steps li { padding: 16px; border: 1px solid var(--line); border-radius: 10px 3px 10px 3px; background: var(--surface); }
 .boss-steps li > span { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--accent); font-size: var(--font-small); font-weight: 900; }
@@ -403,7 +414,7 @@ footer > span { color: var(--subtle); }
   .tool-panel summary { grid-template-columns: 34px 1fr auto; padding: 14px; }
   .tool-content { padding: 16px; }
   .gem-chain { gap: 18px; }
-  .warning-list, .mana-summary, .aura-list, .readiness-grid, .passive-mini-route, .boss-steps, .flask-list { grid-template-columns: 1fr; }
+  .warning-list, .mana-summary, .aura-list, .readiness-grid, .passive-mini-route, .mastery-list, .boss-steps, .flask-list { grid-template-columns: 1fr; }
   .boss-mistake { align-items: flex-start; flex-direction: column; }
   .flask-list label { min-height: 70px; }
   .plan-meta { grid-template-columns: 1fr; }

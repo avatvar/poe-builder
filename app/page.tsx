@@ -35,6 +35,13 @@ type PassiveGuide = {
   rule: string;
   milestones: Array<{ points: string; title: string; nodes: string[]; purpose: string }>;
 };
+type MasteryRecommendation = { category: string; effect: string; reason: string };
+type ClassMasteryGuide = {
+  level: 75;
+  summary: string;
+  core: MasteryRecommendation[];
+  styles: Partial<Record<StyleId, MasteryRecommendation[]>>;
+};
 type GemGuide = {
   mainByStage: string[];
   supports: string[];
@@ -53,6 +60,7 @@ type Catalog = {
   styles: Record<StyleId, StyleOption>;
   stageDetails: Record<StyleId, StageDetail[]>;
   passiveGuides: Record<StyleId, PassiveGuide>;
+  masteryGuides: Record<ClassId, ClassMasteryGuide>;
   gemGuides: Record<StyleId, GemGuide>;
   bossGuides: Record<StyleId, BossGuide>;
   supportTools: SupportTools;
@@ -80,6 +88,7 @@ const dataFiles = {
   styles: "data/styles.json",
   stageDetails: "data/stage-details.json",
   passiveGuides: "data/passive-guides.json",
+  masteryGuides: "data/mastery-guides.json",
   gemGuides: "data/gem-guides.json",
   bossGuides: "data/boss-guides.json",
   supportTools: "data/support-tools.json",
@@ -93,16 +102,17 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 async function loadCatalog(): Promise<Catalog> {
-  const [classes, styles, stageDetails, passiveGuides, gemGuides, bossGuides, supportTools] = await Promise.all([
+  const [classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools] = await Promise.all([
     fetchJson<ClassOption[]>(dataFiles.classes),
     fetchJson<Record<StyleId, StyleOption>>(dataFiles.styles),
     fetchJson<Record<StyleId, StageDetail[]>>(dataFiles.stageDetails),
     fetchJson<Record<StyleId, PassiveGuide>>(dataFiles.passiveGuides),
+    fetchJson<Record<ClassId, ClassMasteryGuide>>(dataFiles.masteryGuides),
     fetchJson<Record<StyleId, GemGuide>>(dataFiles.gemGuides),
     fetchJson<Record<StyleId, BossGuide>>(dataFiles.bossGuides),
     fetchJson<SupportTools>(dataFiles.supportTools),
   ]);
-  return { classes, styles, stageDetails, passiveGuides, gemGuides, bossGuides, supportTools };
+  return { classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools };
 }
 
 function getStageIndex(level: number) {
@@ -241,6 +251,8 @@ export default function Home() {
   const journey = catalog && selectedClass && selectedStyle && currentStage ? (() => {
     const gemGuide = catalog.gemGuides[styleId];
     const passive = catalog.passiveGuides[styleId].milestones[stageIndex];
+    const masteryGuide = catalog.masteryGuides[classId];
+    const masteries = [...masteryGuide.core, ...(masteryGuide.styles[styleId] ?? [])];
     const targets = getReadinessTargets(level, act);
     const tasks = [
       { id: `${styleId}-${stageIndex}-link`, title: `Собери связку с «${gemGuide.mainByStage[stageIndex]}»`, detail: `Начни с ${Math.max(3, Math.min(linkCount, 4))} связанных гнёзд и добавляй поддержки по порядку.` },
@@ -248,7 +260,7 @@ export default function Home() {
       { id: `${styleId}-${stageIndex}-defence`, title: `Проверь защиту перед продолжением`, detail: `Ориентир: ${targets.life} здоровья, ${targets.resistance}% сопротивлений и ${targets.links}L.` },
     ];
     const complete = tasks.filter((task) => completedTaskIds.includes(task.id)).length;
-    return { gemGuide, passive, targets, tasks, complete };
+    return { gemGuide, passive, masteryGuide, masteries, targets, tasks, complete };
   })() : null;
 
   const readinessResult = journey ? (() => {
@@ -347,6 +359,12 @@ export default function Home() {
 
             <ToolPanel number="08" title="Полный маршрут" subtitle="Все четыре этапа — только если нужен общий план">
               <div className="timeline compact-timeline">{selectedStyle.stages.map((stage, index) => <article className="timeline-card" key={stage.levels}><div className="timeline-index"><span>{String(index + 1).padStart(2, "0")}</span></div><div className="timeline-content"><div className="timeline-top"><span>Уровни {stage.levels}</span><small>{stage.title}</small></div><h3>{stage.skills}</h3><p className="stage-focus">{stage.focus}</p><div className="stage-details"><div><span className="detail-label"><i aria-hidden="true">▶</i> Как играть</span><p>{catalog.stageDetails[styleId][index].gameplay}</p></div><div><span className="detail-label"><i aria-hidden="true">↗</i> Как работает связка</span><p>{catalog.stageDetails[styleId][index].mechanics}</p></div></div></div></article>)}</div>
+            </ToolPanel>
+
+            <ToolPanel number="09" title="Мастерства к 75 уровню" subtitle={`${journey.masteries.length} рекомендаций · ${selectedClass.name}`}>
+              <div className="mastery-summary"><span>Ориентир: уровень {journey.masteryGuide.level}</span><p>{journey.masteryGuide.summary}</p></div>
+              <ol className="mastery-list">{journey.masteries.map((mastery, index) => <li key={`${mastery.category}-${mastery.effect}`}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{mastery.category}</strong><p>{mastery.effect}</p><small>{mastery.reason}</small></div></li>)}</ol>
+              <p className="tool-note"><b>Важно:</b> мастерство доступно только в уже взятом кластере. Не делай длинный обход по дереву только ради одного эффекта.</p>
             </ToolPanel>
           </div>
           <p className="demo-note">Рекомендации демонстрационные. Перед новой лигой сверяй изменения камней и дерева навыков с актуальными патчноутами.</p>
