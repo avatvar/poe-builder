@@ -55,6 +55,15 @@ type SupportTools = {
   recommendedAuras: Record<StyleId, string[]>;
   flasks: Record<StyleId, string[]>;
 };
+type LabGuide = { id: string; title: string; level: number; reward: string; preparation: string };
+type CheckpointGuide = { id: string; maxLevel: number; title: string; description: string; tasks: string[] };
+type TransitionGuide = { from: string; to: string; level: number; keep: string; steps: string[] };
+type BeginnerGuides = {
+  labs: LabGuide[];
+  ascendancyPriorities: Record<StyleId, string[]>;
+  checkpoints: CheckpointGuide[];
+  transitions: Record<StyleId, TransitionGuide>;
+};
 type Catalog = {
   classes: ClassOption[];
   styles: Record<StyleId, StyleOption>;
@@ -64,11 +73,12 @@ type Catalog = {
   gemGuides: Record<StyleId, GemGuide>;
   bossGuides: Record<StyleId, BossGuide>;
   supportTools: SupportTools;
+  beginnerGuides: BeginnerGuides;
 };
 
 type Readiness = { life: number; fire: number; cold: number; lightning: number; links: number; bossesFeelOk: boolean };
 type SavedProgress = {
-  version: 2;
+  version: 3;
   classId: ClassId;
   styleId: StyleId;
   level: number;
@@ -79,7 +89,11 @@ type SavedProgress = {
   readiness: Readiness;
   selectedAuras: string[];
   totalMana: number;
+  currentItemText: string;
   itemText: string;
+  currentGemText: string;
+  candidateGemText: string;
+  completedLabs: string[];
 };
 
 const progressKey = "exile-path-progress-v2";
@@ -92,6 +106,7 @@ const dataFiles = {
   gemGuides: "data/gem-guides.json",
   bossGuides: "data/boss-guides.json",
   supportTools: "data/support-tools.json",
+  beginnerGuides: "data/beginner-guides.json",
 } as const;
 const defaultReadiness: Readiness = { life: 0, fire: 0, cold: 0, lightning: 0, links: 3, bossesFeelOk: false };
 
@@ -102,7 +117,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 async function loadCatalog(): Promise<Catalog> {
-  const [classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools] = await Promise.all([
+  const [classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools, beginnerGuides] = await Promise.all([
     fetchJson<ClassOption[]>(dataFiles.classes),
     fetchJson<Record<StyleId, StyleOption>>(dataFiles.styles),
     fetchJson<Record<StyleId, StageDetail[]>>(dataFiles.stageDetails),
@@ -111,8 +126,9 @@ async function loadCatalog(): Promise<Catalog> {
     fetchJson<Record<StyleId, GemGuide>>(dataFiles.gemGuides),
     fetchJson<Record<StyleId, BossGuide>>(dataFiles.bossGuides),
     fetchJson<SupportTools>(dataFiles.supportTools),
+    fetchJson<BeginnerGuides>(dataFiles.beginnerGuides),
   ]);
-  return { classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools };
+  return { classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools, beginnerGuides };
 }
 
 function getStageIndex(level: number) {
@@ -129,29 +145,89 @@ function getReadinessTargets(level: number, act: number) {
   return { life, resistance, links };
 }
 
-function analyzeItem(text: string, level: number) {
+function getItemStats(text: string) {
   if (text.trim().length < 10) return null;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const rarityIndex = lines.findIndex((line) => line.startsWith("Редкость:"));
+  const name = rarityIndex >= 0 ? lines[rarityIndex + 1] ?? "Предмет" : "Предмет";
   const life = [...text.matchAll(/\+(\d+)\s+к максимуму здоровья/gi)].reduce((sum, match) => sum + Number(match[1]), 0);
   const resistances = [...text.matchAll(/\+(\d+)%\s+к сопротивлен/gi)].reduce((sum, match) => sum + Number(match[1]), 0);
   const allResistance = Number(text.match(/\+(\d+)%\s+ко всем сопротивлениям стихиям/i)?.[1] ?? 0) * 3;
   const movement = Number(text.match(/(\d+)%\s+увеличение скорости передвижения/i)?.[1] ?? 0);
   const physical = text.match(/Физический урон:\s*(\d+)-(\d+)/i);
   const attacks = Number(text.match(/Атак в секунду:\s*([\d.,]+)/i)?.[1]?.replace(",", ".") ?? 0);
+  const elementalLine = text.match(/Урон от стихий:\s*([^\n]+)/i)?.[1] ?? "";
+  const elementalAverage = [...elementalLine.matchAll(/(\d+)-(\d+)/g)].reduce((sum, match) => sum + (Number(match[1]) + Number(match[2])) / 2, 0);
+  const physicalAverage = physical ? (Number(physical[1]) + Number(physical[2])) / 2 : 0;
+  const weaponDps = attacks > 0 ? Math.round((physicalAverage + elementalAverage) * attacks) : 0;
+  const requirements = text.split(/Требования:/i)[1]?.split(/--------/)[0] ?? "";
+  const requiredLevel = Number(requirements.match(/Уровень:\s*(\d+)/i)?.[1] ?? 0);
+  return { name, life, resistances: resistances + allResistance, movement, weaponDps, requiredLevel };
+}
+
+function analyzeItem(text: string, level: number) {
+  const stats = getItemStats(text);
+  if (!stats) return null;
   const reasons: Array<{ good: boolean; text: string }> = [];
 
-  if (physical && attacks) {
-    const pdps = Math.round(((Number(physical[1]) + Number(physical[2])) / 2) * attacks);
+  if (stats.weaponDps > 0) {
     const target = level < 40 ? 100 : level < 68 ? 250 : 350;
-    reasons.push({ good: pdps >= target, text: `Физический DPS оружия: примерно ${pdps}; ориентир для этапа — ${target}+.` });
+    reasons.push({ good: stats.weaponDps >= target, text: `Суммарный DPS оружия: примерно ${stats.weaponDps}; ориентир для этапа — ${target}+.` });
   }
-  if (life > 0) reasons.push({ good: life >= (level < 55 ? 45 : 70), text: `Максимум здоровья на предмете: +${life}.` });
+  if (stats.life > 0) reasons.push({ good: stats.life >= (level < 55 ? 45 : 70), text: `Максимум здоровья на предмете: +${stats.life}.` });
   else reasons.push({ good: false, text: "Не найден бонус к максимуму здоровья." });
-  if (resistances + allResistance > 0) reasons.push({ good: resistances + allResistance >= 30, text: `Суммарно найдено около ${resistances + allResistance}% сопротивлений.` });
-  if (movement > 0) reasons.push({ good: movement >= 20, text: `Скорость передвижения: ${movement}%.` });
+  if (stats.resistances > 0) reasons.push({ good: stats.resistances >= 30, text: `Суммарно найдено около ${stats.resistances}% сопротивлений.` });
+  if (stats.movement > 0) reasons.push({ good: stats.movement >= 20, text: `Скорость передвижения: ${stats.movement}%.` });
+  if (stats.requiredLevel > level) reasons.unshift({ good: false, text: `Пока нельзя надеть: требуется ${stats.requiredLevel} уровень.` });
 
   const score = reasons.reduce((total, reason) => total + (reason.good ? 1 : 0), 0);
-  const verdict = score >= Math.max(2, reasons.length - 1) ? "Подходит для текущего этапа" : score >= 1 ? "Ситуативное улучшение" : "Слабый кандидат";
-  return { verdict, tone: score >= Math.max(2, reasons.length - 1) ? "good" : score >= 1 ? "mixed" : "bad", reasons: reasons.slice(0, 3) };
+  const blocked = stats.requiredLevel > level;
+  const verdict = blocked ? "Оставь на следующий уровень" : score >= Math.max(2, reasons.length - 1) ? "Подходит для текущего этапа" : score >= 1 ? "Ситуативное улучшение" : "Слабый кандидат";
+  return { verdict, tone: blocked ? "mixed" : score >= Math.max(2, reasons.length - 1) ? "good" : score >= 1 ? "mixed" : "bad", reasons: reasons.slice(0, 3) };
+}
+
+function compareItems(currentText: string, candidateText: string, level: number) {
+  const current = getItemStats(currentText);
+  const candidate = getItemStats(candidateText);
+  if (!current || !candidate) return null;
+  const weaponComparison = current.weaponDps > 0 || candidate.weaponDps > 0;
+  const currentScore = weaponComparison ? current.weaponDps : current.life + current.resistances * 1.5 + current.movement;
+  const candidateScore = weaponComparison ? candidate.weaponDps : candidate.life + candidate.resistances * 1.5 + candidate.movement;
+  const delta = currentScore > 0 ? Math.round((candidateScore - currentScore) / currentScore * 100) : candidateScore > 0 ? 100 : 0;
+  const reasons: Array<{ good: boolean; text: string }> = [];
+  if (weaponComparison) reasons.push({ good: candidate.weaponDps >= current.weaponDps, text: `DPS оружия: ${current.weaponDps || "—"} → ${candidate.weaponDps || "—"} (${delta >= 0 ? "+" : ""}${delta}%).` });
+  if (candidate.life !== current.life) reasons.push({ good: candidate.life >= current.life, text: `Здоровье: +${current.life} → +${candidate.life}.` });
+  if (candidate.resistances !== current.resistances) reasons.push({ good: candidate.resistances >= current.resistances, text: `Сумма сопротивлений: ${current.resistances}% → ${candidate.resistances}%.` });
+  if (candidate.movement !== current.movement) reasons.push({ good: candidate.movement >= current.movement, text: `Скорость передвижения: ${current.movement}% → ${candidate.movement}%.` });
+  if (candidate.requiredLevel > level) reasons.unshift({ good: false, text: `Кандидат требует ${candidate.requiredLevel} уровень — сейчас его нельзя надеть.` });
+  if (reasons.length === 0) reasons.push({ good: false, text: "По базовым параметрам предметы почти одинаковы; проверь особые свойства вручную." });
+  const blocked = candidate.requiredLevel > level;
+  const verdict = blocked ? "Кандидат лучше сохранить на потом" : delta >= 10 ? "Кандидат выглядит сильнее" : delta <= -10 ? "Текущий предмет лучше" : "Замена ситуативная";
+  const tone = blocked || Math.abs(delta) < 10 ? "mixed" : delta > 0 ? "good" : "bad";
+  return { verdict, tone, reasons: reasons.slice(0, 3), currentName: current.name, candidateName: candidate.name };
+}
+
+function getGemStats(text: string) {
+  if (text.trim().length < 10) return null;
+  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const rarityIndex = lines.findIndex((line) => line.startsWith("Редкость:"));
+  const name = rarityIndex >= 0 ? lines[rarityIndex + 1] ?? "Камень" : "Камень";
+  const level = Number(text.match(/(?:^|\n)Уровень:\s*(\d+)/i)?.[1] ?? 1);
+  const quality = Number(text.match(/(?:^|\n)Качество:\s*\+?(\d+)%/i)?.[1] ?? 0);
+  return { name, level, quality, vaal: /(?:^|\n).*ваал/im.test(text), corrupted: /Осквернено/i.test(text) };
+}
+
+function compareGems(currentText: string, candidateText: string) {
+  const current = getGemStats(currentText);
+  const candidate = getGemStats(candidateText);
+  if (!current || !candidate) return null;
+  const levelGap = current.level - candidate.level;
+  const reasons: string[] = [`Уровень: ${current.level} → ${candidate.level}.`, `Качество: ${current.quality}% → ${candidate.quality}%.`];
+  if (candidate.corrupted) reasons.push("Камень осквернён: обычное улучшение качества недоступно.");
+  if (candidate.vaal && !current.vaal) reasons.push("Новый камень даёт дополнительную ваал-версию умения.");
+  if (levelGap >= 3) return { verdict: "Прокачивай новый камень во втором комплекте", tone: "mixed", reasons: reasons.slice(0, 3) };
+  if (candidate.level > current.level || candidate.quality >= current.quality + 10 || (candidate.vaal && candidate.level >= current.level - 2)) return { verdict: "Можно переходить на новый камень", tone: "good", reasons: reasons.slice(0, 3) };
+  return { verdict: "Пока оставь текущий камень", tone: "bad", reasons: reasons.slice(0, 3) };
 }
 
 function ToolPanel({ number, title, subtitle, children }: { number: string; title: string; subtitle: string; children: ReactNode }) {
@@ -177,13 +253,19 @@ export default function Home() {
   const [readiness, setReadiness] = useState<Readiness>(defaultReadiness);
   const [selectedAuras, setSelectedAuras] = useState<string[]>([]);
   const [totalMana, setTotalMana] = useState(500);
+  const [currentItemText, setCurrentItemText] = useState("");
   const [itemText, setItemText] = useState("");
+  const [currentGemText, setCurrentGemText] = useState("");
+  const [candidateGemText, setCandidateGemText] = useState("");
+  const [completedLabs, setCompletedLabs] = useState<string[]>([]);
 
   const selectedClass = catalog?.classes.find((item) => item.id === classId);
   const selectedStyle = catalog?.styles[styleId];
   const stageIndex = getStageIndex(level);
   const currentStage = selectedStyle?.stages[stageIndex];
   const itemAnalysis = useMemo(() => analyzeItem(itemText, level), [itemText, level]);
+  const itemComparison = useMemo(() => compareItems(currentItemText, itemText, level), [currentItemText, itemText, level]);
+  const gemComparison = useMemo(() => compareGems(currentGemText, candidateGemText), [currentGemText, candidateGemText]);
 
   const requestCatalog = useCallback(async () => {
     setLoadState("loading");
@@ -208,7 +290,11 @@ export default function Home() {
       setReadiness(saved?.readiness ? { ...defaultReadiness, ...saved.readiness } : defaultReadiness);
       setSelectedAuras(Array.isArray(saved?.selectedAuras) ? saved.selectedAuras : [nextCatalog.supportTools.recommendedAuras[savedStyle][0]]);
       setTotalMana(Math.max(1, Number(saved?.totalMana) || 500));
+      setCurrentItemText(typeof saved?.currentItemText === "string" ? saved.currentItemText : "");
       setItemText(typeof saved?.itemText === "string" ? saved.itemText : "");
+      setCurrentGemText(typeof saved?.currentGemText === "string" ? saved.currentGemText : "");
+      setCandidateGemText(typeof saved?.candidateGemText === "string" ? saved.candidateGemText : "");
+      setCompletedLabs(Array.isArray(saved?.completedLabs) ? saved.completedLabs : []);
       setLoadState("ready");
     } catch {
       setLoadState("error");
@@ -219,15 +305,21 @@ export default function Home() {
     const stored = window.localStorage.getItem("exile-path-theme") as Theme | null;
     const preferred = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     const initial = stored === "dark" || stored === "light" ? stored : preferred;
-    setTheme(initial);
-    document.documentElement.dataset.theme = initial;
+    const frame = window.requestAnimationFrame(() => {
+      setTheme(initial);
+      document.documentElement.dataset.theme = initial;
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
-  useEffect(() => { void requestCatalog(); }, [requestCatalog]);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => void requestCatalog());
+    return () => window.cancelAnimationFrame(frame);
+  }, [requestCatalog]);
   useEffect(() => {
     if (loadState !== "ready") return;
-    const saved: SavedProgress = { version: 2, classId, styleId, level, act, showPlan, completedTaskIds, linkCount, readiness, selectedAuras, totalMana, itemText };
+    const saved: SavedProgress = { version: 3, classId, styleId, level, act, showPlan, completedTaskIds, linkCount, readiness, selectedAuras, totalMana, currentItemText, itemText, currentGemText, candidateGemText, completedLabs };
     window.localStorage.setItem(progressKey, JSON.stringify(saved));
-  }, [act, classId, completedTaskIds, itemText, level, linkCount, loadState, readiness, selectedAuras, showPlan, styleId, totalMana]);
+  }, [act, candidateGemText, classId, completedLabs, completedTaskIds, currentGemText, currentItemText, itemText, level, linkCount, loadState, readiness, selectedAuras, showPlan, styleId, totalMana]);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
@@ -253,6 +345,15 @@ export default function Home() {
     const passive = catalog.passiveGuides[styleId].milestones[stageIndex];
     const masteryGuide = catalog.masteryGuides[classId];
     const masteries = [...masteryGuide.core, ...(masteryGuide.styles[styleId] ?? [])];
+    const passiveCandidates = catalog.passiveGuides[styleId].milestones.flatMap((milestone, index) => index >= stageIndex ? milestone.nodes.map((node) => ({ node, source: milestone.title })) : []);
+    const masteryCandidates = masteries.map((mastery) => ({ node: mastery.category, source: "Подходящее мастерство" }));
+    const nextPassives = [...passiveCandidates, ...masteryCandidates].filter((item, index, items) => items.findIndex((candidate) => candidate.node === item.node) === index).slice(0, 5);
+    const checkpoint = catalog.beginnerGuides.checkpoints.find((item) => level <= item.maxLevel) ?? catalog.beginnerGuides.checkpoints.at(-1)!;
+    const transition = catalog.beginnerGuides.transitions[styleId];
+    const nextLabIndex = catalog.beginnerGuides.labs.findIndex((lab) => !completedLabs.includes(lab.id));
+    const labsComplete = nextLabIndex === -1;
+    const labIndex = nextLabIndex === -1 ? catalog.beginnerGuides.labs.length - 1 : nextLabIndex;
+    const nextLab = catalog.beginnerGuides.labs[labIndex];
     const targets = getReadinessTargets(level, act);
     const tasks = [
       { id: `${styleId}-${stageIndex}-link`, title: `Собери связку с «${gemGuide.mainByStage[stageIndex]}»`, detail: `Начни с ${Math.max(3, Math.min(linkCount, 4))} связанных гнёзд и добавляй поддержки по порядку.` },
@@ -260,7 +361,7 @@ export default function Home() {
       { id: `${styleId}-${stageIndex}-defence`, title: `Проверь защиту перед продолжением`, detail: `Ориентир: ${targets.life} здоровья, ${targets.resistance}% сопротивлений и ${targets.links}L.` },
     ];
     const complete = tasks.filter((task) => completedTaskIds.includes(task.id)).length;
-    return { gemGuide, passive, masteryGuide, masteries, targets, tasks, complete };
+    return { gemGuide, passive, masteryGuide, masteries, nextPassives, checkpoint, transition, nextLab, labIndex, labsComplete, targets, tasks, complete };
   })() : null;
 
   const readinessResult = journey ? (() => {
@@ -323,45 +424,53 @@ export default function Home() {
               <div className="gem-chain">{[journey.gemGuide.mainByStage[stageIndex], ...journey.gemGuide.supports].slice(0, linkCount).map((gem, index) => <span key={gem} className={index === 0 ? "is-main" : ""}>{gem}{index < linkCount - 1 && <i aria-hidden="true">＋</i>}</span>)}</div>
               <p className="tool-note">{journey.gemGuide.alternative}</p>
               <div className="warning-list">{journey.gemGuide.warnings.map((warning) => <div key={warning.gem}><span>!</span><p><strong>{warning.gem}</strong>{warning.rule}</p></div>)}</div>
+              <details className="mini-tool"><summary>Сравнить текущий и новый камень <span>＋</span></summary><div className="compare-inputs"><label className="item-input"><span>Текущий камень</span><textarea value={currentGemText} onChange={(event) => setCurrentGemText(event.target.value)} placeholder="Вставь описание используемого камня…" rows={6} /></label><label className="item-input"><span>Новый камень</span><textarea value={candidateGemText} onChange={(event) => setCandidateGemText(event.target.value)} placeholder="Вставь описание кандидата…" rows={6} /></label></div>{gemComparison ? <div className={`item-verdict verdict-${gemComparison.tone}`}><strong>{gemComparison.verdict}</strong><ul>{gemComparison.reasons.map((reason) => <li key={reason}><span>•</span>{reason}</li>)}</ul></div> : <p className="empty-helper">Вставь два описания — помощник учтёт уровень, качество, ваал-версию и осквернение.</p>}</details>
             </ToolPanel>
 
-            <ToolPanel number="02" title="Следующий пассив" subtitle={`${journey.passive.points} очков · ${journey.passive.nodes[0]}`}>
+            <ToolPanel number="02" title="Следующие 5 пассивов" subtitle={`${journey.nextPassives.filter((item, index) => completedTaskIds.includes(`passive-next-${styleId}-${stageIndex}-${index}`)).length}/${journey.nextPassives.length} отмечено · ${journey.passive.points} очков`}>
               <div className="next-passive"><span>Бери следующим</span><h3>{journey.passive.nodes[0]}</h3><p>{journey.passive.purpose}</p></div>
-              <div className="passive-mini-route">{catalog.passiveGuides[styleId].milestones.map((milestone, index) => <div key={milestone.points} className={index === stageIndex ? "is-current" : ""}><span>{milestone.points}</span><strong>{milestone.title}</strong><small>{milestone.nodes.join(" → ")}</small></div>)}</div>
+              <div className="next-passive-list">{journey.nextPassives.map((item, index) => { const id = `passive-next-${styleId}-${stageIndex}-${index}`; const done = completedTaskIds.includes(id); return <label key={`${item.node}-${index}`} className={done ? "is-done" : ""}><input type="checkbox" checked={done} onChange={() => toggleTask(id)} /><span>{index + 1}</span><div><strong>{item.node}</strong><small>{item.source}</small></div></label>; })}</div>
               <p className="tool-note"><b>Правило:</b> {catalog.passiveGuides[styleId].rule}</p>
             </ToolPanel>
 
-            <ToolPanel number="03" title="Режим «Босс»" subtitle="Четыре действия без лишней теории">
+            <ToolPanel number="03" title="Лабиринт и восхождение" subtitle={`${completedLabs.length}/4 пройдено · ${journey.labsComplete ? "восхождение завершено" : `следующий: ${journey.nextLab.title}`}`}>
+              <div className="lab-next"><span>{journey.labsComplete ? "Готово" : "Следующая цель"}</span><h3>{journey.labsComplete ? "Восхождение завершено" : journey.nextLab.title}</h3><p>{journey.labsComplete ? "Все восемь очков получены — возвращайся только для смены ветки или зачарования." : `Ориентир: уровень ${journey.nextLab.level} · ${journey.nextLab.reward}`}</p><strong>{selectedClass.ascendancies[styleId]}</strong><small>{catalog.beginnerGuides.ascendancyPriorities[styleId][journey.labIndex]}</small></div>
+              <div className="lab-list">{catalog.beginnerGuides.labs.map((lab, index) => { const done = completedLabs.includes(lab.id); return <label key={lab.id} className={done ? "is-done" : index === journey.labIndex ? "is-current" : ""}><input type="checkbox" checked={done} onChange={() => setCompletedLabs((current) => current.includes(lab.id) ? current.filter((id) => id !== lab.id) : [...current, lab.id])} /><span>{done ? "✓" : index + 1}</span><div><strong>{lab.title}</strong><small>Ур. {lab.level} · {lab.preparation}</small></div></label>; })}</div>
+            </ToolPanel>
+
+            <ToolPanel number="04" title="Режим «Босс»" subtitle="Четыре действия без лишней теории">
               <ol className="boss-steps">{catalog.bossGuides[styleId].steps.map((step, index) => <li key={step}><span>{index + 1}</span><p>{step}</p></li>)}</ol>
               <div className="boss-mistake"><span>Не делай так</span><p>{catalog.bossGuides[styleId].mistake}</p></div>
             </ToolPanel>
 
-            <ToolPanel number="04" title="Проверка готовности" subtitle={`${readinessResult.passed}/4 условий · ${readinessResult.label}`}>
+            <ToolPanel number="05" title="Контрольная точка и готовность" subtitle={`${journey.checkpoint.title} · ${readinessResult.passed}/4 условий`}>
+              <div className="checkpoint-card"><span>Сейчас важно</span><h3>{journey.checkpoint.title}</h3><p>{journey.checkpoint.description}</p><div>{journey.checkpoint.tasks.map((task, index) => { const id = `checkpoint-${journey.checkpoint.id}-${index}`; const done = completedTaskIds.includes(id); return <label key={task} className={done ? "is-done" : ""}><input type="checkbox" checked={done} onChange={() => toggleTask(id)} /><span>✓</span><strong>{task}</strong></label>; })}</div></div>
               <div className="readiness-result"><div className={`readiness-score score-${readinessResult.passed}`}>{readinessResult.passed}/4</div><div><strong>{readinessResult.label}</strong><span>Ориентиры зависят от уровня и текущего акта.</span></div></div>
               <div className="readiness-grid"><label><span>Здоровье <small>цель {journey.targets.life}</small></span><input type="number" min="0" value={readiness.life || ""} placeholder="0" onChange={(event) => setReadiness({ ...readiness, life: Number(event.target.value) })} /></label>{(["fire", "cold", "lightning"] as const).map((key) => <label key={key}><span>{key === "fire" ? "Огонь" : key === "cold" ? "Холод" : "Молния"} <small>цель {journey.targets.resistance}%</small></span><input type="number" min="-60" max="90" value={readiness[key] || ""} placeholder="0" onChange={(event) => setReadiness({ ...readiness, [key]: Number(event.target.value) })} /></label>)}<label><span>Связность <small>цель {journey.targets.links}L</small></span><select value={readiness.links} onChange={(event) => setReadiness({ ...readiness, links: Number(event.target.value) })}>{[3,4,5,6].map((value) => <option value={value} key={value}>{value}L</option>)}</select></label><label className="check-field"><input type="checkbox" checked={readiness.bossesFeelOk} onChange={(event) => setReadiness({ ...readiness, bossesFeelOk: event.target.checked })} /><span>Редкие враги умирают без долгого боя</span></label></div>
             </ToolPanel>
 
-            <ToolPanel number="05" title="Ауры и свободная мана" subtitle={`${auraReservation}% зарезервировано · примерно ${freeMana} маны свободно`}>
+            <ToolPanel number="06" title="Ауры и свободная мана" subtitle={`${auraReservation}% зарезервировано · примерно ${freeMana} маны свободно`}>
               <div className="mana-summary"><label><span>Всего маны</span><input type="number" min="1" value={totalMana} onChange={(event) => setTotalMana(Math.max(1, Number(event.target.value)))} /></label><div><span>Свободно</span><strong className={auraReservation >= 100 ? "is-danger" : auraReservation > 85 ? "is-warning" : ""}>{freeMana} · {Math.max(0, 100 - auraReservation)}%</strong></div></div>
               <div className="aura-list">{catalog.supportTools.recommendedAuras[styleId].map((id) => { const aura = catalog.supportTools.auras[id]; const checked = selectedAuras.includes(id); return <label key={id} className={checked ? "is-selected" : ""}><input type="checkbox" checked={checked} onChange={() => setSelectedAuras((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])} /><span><strong>{aura.name}</strong><small>{aura.purpose}</small></span><b>{aura.reservation}%</b></label>; })}</div>
               <p className={`tool-note ${auraReservation >= 100 ? "note-danger" : ""}`}>{auraReservation >= 100 ? "Эта комбинация не оставляет ману для основной связки. Отключи одну ауру или возьми эффективность резервирования." : auraReservation > 85 ? "Маны останется мало: проверь стоимость основной атаки и источник восстановления." : "Запас выглядит комфортно для основной связки."}</p>
             </ToolPanel>
 
-            <ToolPanel number="06" title="Быстрая проверка предмета" subtitle={itemAnalysis?.verdict ?? "Вставь описание предмета из игры"}>
-              <label className="item-input"><span>Описание предмета</span><textarea value={itemText} onChange={(event) => setItemText(event.target.value)} placeholder="Скопируй предмет в игре и вставь сюда…" rows={7} /></label>
-              {itemAnalysis && <div className={`item-verdict verdict-${itemAnalysis.tone}`}><strong>{itemAnalysis.verdict}</strong><ul>{itemAnalysis.reasons.map((reason) => <li key={reason.text}><span>{reason.good ? "✓" : "!"}</span>{reason.text}</li>)}</ul><small>Оценка предварительная: редкие механики и уникальные свойства могут изменить вывод.</small></div>}
+            <ToolPanel number="07" title="Сравнение двух предметов" subtitle={itemComparison?.verdict ?? itemAnalysis?.verdict ?? "Вставь текущий предмет и кандидата"}>
+              <div className="compare-inputs"><label className="item-input"><span>Сейчас надето</span><textarea value={currentItemText} onChange={(event) => setCurrentItemText(event.target.value)} placeholder="Скопируй текущий предмет из игры…" rows={7} /></label><label className="item-input"><span>Кандидат на замену</span><textarea value={itemText} onChange={(event) => setItemText(event.target.value)} placeholder="Скопируй новый предмет из игры…" rows={7} /></label></div>
+              {itemComparison ? <div className={`item-verdict verdict-${itemComparison.tone}`}><strong>{itemComparison.verdict}</strong><p className="comparison-name">{itemComparison.currentName} <span>→</span> {itemComparison.candidateName}</p><ul>{itemComparison.reasons.map((reason) => <li key={reason.text}><span>{reason.good ? "✓" : "!"}</span>{reason.text}</li>)}</ul><small>Оценка предварительная: особые свойства и механики билда могут изменить результат.</small></div> : itemAnalysis ? <div className={`item-verdict verdict-${itemAnalysis.tone}`}><strong>{itemAnalysis.verdict}</strong><ul>{itemAnalysis.reasons.map((reason) => <li key={reason.text}><span>{reason.good ? "✓" : "!"}</span>{reason.text}</li>)}</ul><small>Добавь текущий предмет, чтобы увидеть прямое сравнение.</small></div> : <p className="empty-helper">Можно начать только с кандидата — сайт даст предварительную оценку, а после второго описания сравнит их напрямую.</p>}
             </ToolPanel>
 
-            <ToolPanel number="07" title="Комплект флаконов" subtitle="Пять понятных слотов для текущего стиля">
+            <ToolPanel number="08" title="Комплект флаконов" subtitle="Пять понятных слотов для текущего стиля">
               <div className="flask-list">{catalog.supportTools.flasks[styleId].map((flask, index) => { const id = `flask-${styleId}-${index}`; const done = completedTaskIds.includes(id); return <label key={flask} className={done ? "is-done" : ""}><input type="checkbox" checked={done} onChange={() => toggleTask(id)} /><span>{index + 1}</span><strong>{flask}</strong></label>; })}</div>
               <p className="tool-note">Сначала закрой снятие кровотечения и заморозки. Остальные защитные свойства добавляй по мере появления хороших флаконов.</p>
             </ToolPanel>
 
-            <ToolPanel number="08" title="Полный маршрут" subtitle="Все четыре этапа — только если нужен общий план">
+            <ToolPanel number="09" title="Переход навыка и полный маршрут" subtitle={`${journey.transition.from} → ${journey.transition.to} · ориентир ур. ${journey.transition.level}`}>
+              <div className="transition-card"><div><span>План перехода</span><h3>{journey.transition.from} <i>→</i> {journey.transition.to}</h3><p>{journey.transition.keep}</p></div><ol>{journey.transition.steps.map((step, index) => <li key={step}><span>{index + 1}</span>{step}</li>)}</ol></div>
               <div className="timeline compact-timeline">{selectedStyle.stages.map((stage, index) => <article className="timeline-card" key={stage.levels}><div className="timeline-index"><span>{String(index + 1).padStart(2, "0")}</span></div><div className="timeline-content"><div className="timeline-top"><span>Уровни {stage.levels}</span><small>{stage.title}</small></div><h3>{stage.skills}</h3><p className="stage-focus">{stage.focus}</p><div className="stage-details"><div><span className="detail-label"><i aria-hidden="true">▶</i> Как играть</span><p>{catalog.stageDetails[styleId][index].gameplay}</p></div><div><span className="detail-label"><i aria-hidden="true">↗</i> Как работает связка</span><p>{catalog.stageDetails[styleId][index].mechanics}</p></div></div></div></article>)}</div>
             </ToolPanel>
 
-            <ToolPanel number="09" title="Мастерства к 75 уровню" subtitle={`${journey.masteries.length} рекомендаций · ${selectedClass.name}`}>
+            <ToolPanel number="10" title="Мастерства к 75 уровню" subtitle={`${journey.masteries.length} рекомендаций · ${selectedClass.name}`}>
               <div className="mastery-summary"><span>Ориентир: уровень {journey.masteryGuide.level}</span><p>{journey.masteryGuide.summary}</p></div>
               <ol className="mastery-list">{journey.masteries.map((mastery, index) => <li key={`${mastery.category}-${mastery.effect}`}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{mastery.category}</strong><p>{mastery.effect}</p><small>{mastery.reason}</small></div></li>)}</ol>
               <p className="tool-note"><b>Важно:</b> мастерство доступно только в уже взятом кластере. Не делай длинный обход по дереву только ради одного эффекта.</p>

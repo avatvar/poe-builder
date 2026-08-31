@@ -29,7 +29,7 @@ test("renders the Exile Path builder", async () => {
 
 test("keeps the build catalog in separate valid JSON files", async () => {
   const dataRoot = new URL("../public/data/", import.meta.url);
-  const [classes, styles, details, passives, masteries, gems, bosses, tools] = await Promise.all([
+  const [classes, styles, details, passives, masteries, gems, bosses, tools, beginners] = await Promise.all([
     readFile(new URL("classes.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("styles.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("stage-details.json", dataRoot), "utf8").then(JSON.parse),
@@ -38,6 +38,7 @@ test("keeps the build catalog in separate valid JSON files", async () => {
     readFile(new URL("gem-guides.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("boss-guides.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("support-tools.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("beginner-guides.json", dataRoot), "utf8").then(JSON.parse),
   ]);
 
   assert.equal(classes.length, 7);
@@ -47,6 +48,10 @@ test("keeps the build catalog in separate valid JSON files", async () => {
   assert.deepEqual(Object.keys(masteries).sort(), classes.map((classOption) => classOption.id).sort());
   assert.deepEqual(Object.keys(gems).sort(), Object.keys(styles).sort());
   assert.deepEqual(Object.keys(bosses).sort(), Object.keys(styles).sort());
+  assert.deepEqual(Object.keys(beginners.transitions).sort(), Object.keys(styles).sort());
+  assert.deepEqual(Object.keys(beginners.ascendancyPriorities).sort(), Object.keys(styles).sort());
+  assert.equal(beginners.labs.length, 4);
+  assert.equal(beginners.checkpoints.length, 4);
 
   for (const style of Object.values(styles)) {
     assert.equal(style.stages.length, 4);
@@ -73,4 +78,17 @@ test("persists the beginner profile and progress locally", async () => {
   assert.match(page, /localStorage\.getItem\(progressKey\)/);
   assert.match(page, /localStorage\.setItem\(progressKey/);
   assert.match(page, /completedTaskIds/);
+  assert.match(page, /completedLabs/);
+  assert.match(page, /currentItemText/);
+  assert.match(page, /candidateGemText/);
+});
+
+test("includes the six beginner helpers", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /Следующие 5 пассивов/);
+  assert.match(page, /Лабиринт и восхождение/);
+  assert.match(page, /Контрольная точка и готовность/);
+  assert.match(page, /Переход навыка и полный маршрут/);
+  assert.match(page, /Сравнение двух предметов/);
+  assert.match(page, /Сравнить текущий и новый камень/);
 });

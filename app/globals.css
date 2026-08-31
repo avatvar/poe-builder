@@ -271,6 +271,41 @@ main { min-height: 100vh; overflow: hidden; }
 .passive-mini-route span { color: var(--accent); font-size: var(--font-small); font-weight: 900; }
 .passive-mini-route strong { font-size: var(--font-small); }
 .passive-mini-route small { color: var(--muted); font-size: var(--font-small); line-height: 1.5; }
+.next-passive-list { margin-top: 13px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.next-passive-list label { min-height: 100px; padding: 12px; position: relative; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line); border-radius: 9px 3px 9px 3px; background: var(--surface); cursor: pointer; }
+.next-passive-list input, .lab-list input, .checkpoint-card input { position: absolute; opacity: 0; pointer-events: none; }
+.next-passive-list label > span { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; color: var(--accent); background: var(--accent-soft); font-size: var(--font-small); font-weight: 900; }
+.next-passive-list label > div { display: flex; flex-direction: column; gap: 5px; }
+.next-passive-list strong { font-size: var(--font-small); line-height: 1.35; }
+.next-passive-list small { color: var(--muted); font-size: var(--font-small); line-height: 1.35; }
+.next-passive-list label.is-done { border-color: var(--green); opacity: .65; }
+.next-passive-list label.is-done strong { text-decoration: line-through; }
+.lab-next { padding: 19px; display: grid; grid-template-columns: 1fr auto; gap: 6px 20px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 12px 4px 12px 4px; background: var(--accent-soft); }
+.lab-next > span { color: var(--accent); font-size: var(--font-small); font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.lab-next h3 { margin: 0; font-family: var(--font-unbounded), sans-serif; font-size: var(--font-heading); }
+.lab-next p { margin: 0; color: var(--muted); font-size: var(--font-small); }
+.lab-next > strong { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--accent); font-size: var(--font-body); }
+.lab-next > small { grid-column: 1 / -1; margin-top: 7px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line)); color: var(--text); font-size: var(--font-small); line-height: 1.5; }
+.lab-list { margin-top: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.lab-list label { min-height: 112px; padding: 12px; position: relative; display: flex; gap: 9px; border: 1px solid var(--line); border-radius: 9px 3px 9px 3px; background: var(--surface); cursor: pointer; }
+.lab-list label > span { width: 27px; height: 27px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; color: var(--accent); background: var(--accent-soft); font-size: var(--font-small); font-weight: 900; }
+.lab-list label > div { display: flex; flex-direction: column; gap: 5px; }
+.lab-list strong { font-size: var(--font-small); line-height: 1.35; }
+.lab-list small { color: var(--muted); font-size: var(--font-small); line-height: 1.4; }
+.lab-list label.is-current { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.lab-list label.is-done { border-color: var(--green); opacity: .65; }
+.lab-list label.is-done > span { color: white; background: var(--green); }
+.checkpoint-card { margin-bottom: 18px; padding: 19px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 12px 4px 12px 4px; background: var(--accent-soft); }
+.checkpoint-card > span { color: var(--accent); font-size: var(--font-small); font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.checkpoint-card h3 { margin: 6px 0; font-family: var(--font-unbounded), sans-serif; font-size: var(--font-heading); }
+.checkpoint-card > p { margin: 0; color: var(--muted); font-size: var(--font-small); line-height: 1.5; }
+.checkpoint-card > div { margin-top: 13px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.checkpoint-card label { padding: 10px; position: relative; display: flex; gap: 8px; align-items: flex-start; border-radius: 8px 3px 8px 3px; background: var(--surface); cursor: pointer; }
+.checkpoint-card label > span { width: 21px; height: 21px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: transparent; font-size: var(--font-small); }
+.checkpoint-card label strong { font-size: var(--font-small); line-height: 1.4; }
+.checkpoint-card label.is-done { opacity: .65; }
+.checkpoint-card label.is-done > span { color: white; border-color: var(--green); background: var(--green); }
+.checkpoint-card label.is-done strong { text-decoration: line-through; }
 .mastery-summary { padding: 18px; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line)); border-radius: 12px 4px 12px 4px; background: var(--accent-soft); }
 .mastery-summary span { color: var(--accent); font-size: var(--font-small); font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .mastery-summary p { margin: 8px 0 0; color: var(--text); font-size: var(--font-body); line-height: 1.5; }
@@ -315,7 +350,15 @@ main { min-height: 100vh; overflow: hidden; }
 .aura-list strong { font-size: var(--font-small); }
 .aura-list small { color: var(--muted); font-size: var(--font-small); }
 .aura-list b { color: var(--accent); font-size: var(--font-small); }
+.mini-tool { margin-top: 16px; border: 1px solid var(--line); border-radius: 10px 3px 10px 3px; background: var(--surface); overflow: hidden; }
+.mini-tool > summary { padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; font-size: var(--font-body); font-weight: 800; }
+.mini-tool > summary::-webkit-details-marker { display: none; }
+.mini-tool > summary span { color: var(--accent); font-size: var(--font-heading); transition: transform .2s ease; }
+.mini-tool[open] > summary span { transform: rotate(45deg); }
+.mini-tool > .compare-inputs, .mini-tool > .item-verdict, .mini-tool > .empty-helper { margin: 0 16px 16px; }
+.compare-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .item-input textarea { resize: vertical; line-height: 1.5; }
+.empty-helper { margin: 14px 0 0; padding: 13px 15px; color: var(--muted); border: 1px dashed var(--line); border-radius: 9px 3px 9px 3px; background: var(--surface); font-size: var(--font-small); line-height: 1.5; }
 .item-verdict { margin-top: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 11px 4px 11px 4px; background: var(--surface); }
 .item-verdict > strong { display: block; color: #cf8b31; font-size: var(--font-body); }
 .item-verdict.verdict-good > strong { color: var(--green); }
@@ -324,6 +367,8 @@ main { min-height: 100vh; overflow: hidden; }
 .item-verdict li { display: flex; gap: 8px; color: var(--muted); font-size: var(--font-small); }
 .item-verdict li span { color: var(--accent); font-weight: 900; }
 .item-verdict small { color: var(--subtle); font-size: var(--font-small); }
+.comparison-name { margin: 7px 0 0; color: var(--muted); font-size: var(--font-small); }
+.comparison-name span { color: var(--accent); font-weight: 900; }
 .flask-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .flask-list label { min-height: 92px; padding: 12px; position: relative; display: flex; flex-direction: column; gap: 9px; border: 1px solid var(--line); border-radius: 10px 3px 10px 3px; background: var(--surface); cursor: pointer; }
 .flask-list input { position: absolute; opacity: 0; }
@@ -331,6 +376,14 @@ main { min-height: 100vh; overflow: hidden; }
 .flask-list strong { font-size: var(--font-small); line-height: 1.4; }
 .flask-list label.is-done { border-color: var(--green); opacity: .65; }
 .flask-list label.is-done strong { text-decoration: line-through; }
+.transition-card { margin-bottom: 16px; padding: 19px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 12px 4px 12px 4px; background: var(--accent-soft); }
+.transition-card > div > span { color: var(--accent); font-size: var(--font-small); font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.transition-card h3 { margin: 7px 0; font-family: var(--font-unbounded), sans-serif; font-size: var(--font-heading); line-height: 1.35; }
+.transition-card h3 i { color: var(--accent); font-style: normal; }
+.transition-card p { margin: 0; color: var(--muted); font-size: var(--font-small); line-height: 1.5; }
+.transition-card ol { margin: 0; padding: 0; display: grid; gap: 8px; list-style: none; }
+.transition-card li { display: flex; gap: 9px; align-items: center; color: var(--text); font-size: var(--font-small); line-height: 1.4; }
+.transition-card li span { width: 24px; height: 24px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--accent); font-weight: 900; }
 .compact-timeline { margin-top: 0; }
 
 .passive-section { margin-top: 72px; padding-top: 68px; border-top: 1px solid var(--line); }
@@ -379,6 +432,8 @@ footer > span { color: var(--subtle); }
   .next-actions { grid-template-columns: 1fr; }
   .boss-steps { grid-template-columns: repeat(2, 1fr); }
   .flask-list { grid-template-columns: repeat(3, 1fr); }
+  .next-passive-list { grid-template-columns: repeat(3, 1fr); }
+  .lab-list { grid-template-columns: repeat(2, 1fr); }
   .passive-route { grid-template-columns: repeat(2, 1fr); }
   .passive-route::before { display: none; }
 }
@@ -414,7 +469,9 @@ footer > span { color: var(--subtle); }
   .tool-panel summary { grid-template-columns: 34px 1fr auto; padding: 14px; }
   .tool-content { padding: 16px; }
   .gem-chain { gap: 18px; }
-  .warning-list, .mana-summary, .aura-list, .readiness-grid, .passive-mini-route, .mastery-list, .boss-steps, .flask-list { grid-template-columns: 1fr; }
+  .warning-list, .mana-summary, .aura-list, .readiness-grid, .passive-mini-route, .mastery-list, .boss-steps, .flask-list, .next-passive-list, .lab-list, .checkpoint-card > div, .compare-inputs, .transition-card { grid-template-columns: 1fr; }
+  .lab-next { grid-template-columns: 1fr; }
+  .lab-next > strong, .lab-next > small { grid-column: 1; grid-row: auto; }
   .boss-mistake { align-items: flex-start; flex-direction: column; }
   .flask-list label { min-height: 70px; }
   .plan-meta { grid-template-columns: 1fr; }
