@@ -21,7 +21,8 @@ test("renders the Exile Path builder", async () => {
 
   const html = await response.text();
   assert.match(html, /Exile Path/);
-  assert.match(html, /Как ты хочешь играть/);
+  assert.match(html, /Дворянка с «Искрой»/);
+  assert.match(html, /Твоя Дворянка с «Искрой»/);
   assert.match(html, /Загружаем каталог/);
   assert.doesNotMatch(html, /codex-preview/);
   assert.doesNotMatch(html, /react-loading-skeleton/);
@@ -52,6 +53,9 @@ test("keeps the build catalog in separate valid JSON files", async () => {
   assert.deepEqual(Object.keys(beginners.ascendancyPriorities).sort(), Object.keys(styles).sort());
   assert.equal(beginners.labs.length, 4);
   assert.equal(beginners.checkpoints.length, 4);
+  assert.equal(classes.find((classOption) => classOption.id === "scion")?.styles[0], "spark");
+  assert.ok(styles.spark);
+  assert.deepEqual(gems.spark.mainByStage, ["Искра", "Искра", "Искра", "Искра"]);
 
   for (const style of Object.values(styles)) {
     assert.equal(style.stages.length, 4);

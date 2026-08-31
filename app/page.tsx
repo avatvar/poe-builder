@@ -6,7 +6,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 type Theme = "light" | "dark";
 type ClassId = "marauder" | "ranger" | "witch" | "duelist" | "templar" | "shadow" | "scion";
-type StyleId = "melee" | "ranged" | "spells" | "minions" | "totems" | "traps" | "poison" | "bleed" | "elemental" | "hybrid";
+type StyleId = "melee" | "ranged" | "spells" | "minions" | "totems" | "traps" | "poison" | "bleed" | "elemental" | "spark" | "hybrid";
 
 type ClassOption = {
   id: ClassId;
@@ -78,7 +78,7 @@ type Catalog = {
 
 type Readiness = { life: number; fire: number; cold: number; lightning: number; links: number; bossesFeelOk: boolean };
 type SavedProgress = {
-  version: 3;
+  version: 4;
   classId: ClassId;
   styleId: StyleId;
   level: number;
@@ -243,8 +243,8 @@ export default function Home() {
   const [theme, setTheme] = useState<Theme>("light");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
-  const [classId, setClassId] = useState<ClassId>("marauder");
-  const [styleId, setStyleId] = useState<StyleId>("melee");
+  const [classId, setClassId] = useState<ClassId>("scion");
+  const [styleId, setStyleId] = useState<StyleId>("spark");
   const [level, setLevel] = useState(1);
   const [act, setAct] = useState(1);
   const [showPlan, setShowPlan] = useState(false);
@@ -273,11 +273,13 @@ export default function Home() {
       const nextCatalog = await loadCatalog();
       const firstClass = nextCatalog.classes[0];
       if (!firstClass || !firstClass.styles[0]) throw new Error("Каталог классов пуст");
+      const personalizedClass = nextCatalog.classes.find((item) => item.id === "scion") ?? firstClass;
 
       let saved: Partial<SavedProgress> | null = null;
       try { saved = JSON.parse(window.localStorage.getItem(progressKey) ?? "null") as Partial<SavedProgress> | null; } catch { saved = null; }
-      const savedClass = nextCatalog.classes.find((item) => item.id === saved?.classId) ?? firstClass;
-      const savedStyle = savedClass.styles.includes(saved?.styleId as StyleId) ? saved?.styleId as StyleId : savedClass.styles[0];
+      const hasPersonalizedSave = saved?.version === 4;
+      const savedClass = hasPersonalizedSave ? nextCatalog.classes.find((item) => item.id === saved?.classId) ?? personalizedClass : personalizedClass;
+      const savedStyle = hasPersonalizedSave && savedClass.styles.includes(saved?.styleId as StyleId) ? saved?.styleId as StyleId : savedClass.styles.includes("spark") ? "spark" : savedClass.styles[0];
 
       setCatalog(nextCatalog);
       setClassId(savedClass.id);
@@ -288,13 +290,13 @@ export default function Home() {
       setCompletedTaskIds(Array.isArray(saved?.completedTaskIds) ? saved.completedTaskIds : []);
       setLinkCount(Math.min(6, Math.max(3, Number(saved?.linkCount) || 3)));
       setReadiness(saved?.readiness ? { ...defaultReadiness, ...saved.readiness } : defaultReadiness);
-      setSelectedAuras(Array.isArray(saved?.selectedAuras) ? saved.selectedAuras : [nextCatalog.supportTools.recommendedAuras[savedStyle][0]]);
+      setSelectedAuras(hasPersonalizedSave && Array.isArray(saved?.selectedAuras) ? saved.selectedAuras : [nextCatalog.supportTools.recommendedAuras[savedStyle][0]]);
       setTotalMana(Math.max(1, Number(saved?.totalMana) || 500));
       setCurrentItemText(typeof saved?.currentItemText === "string" ? saved.currentItemText : "");
       setItemText(typeof saved?.itemText === "string" ? saved.itemText : "");
       setCurrentGemText(typeof saved?.currentGemText === "string" ? saved.currentGemText : "");
       setCandidateGemText(typeof saved?.candidateGemText === "string" ? saved.candidateGemText : "");
-      setCompletedLabs(Array.isArray(saved?.completedLabs) ? saved.completedLabs : []);
+      setCompletedLabs(hasPersonalizedSave && Array.isArray(saved?.completedLabs) ? saved.completedLabs : []);
       setLoadState("ready");
     } catch {
       setLoadState("error");
@@ -317,7 +319,7 @@ export default function Home() {
   }, [requestCatalog]);
   useEffect(() => {
     if (loadState !== "ready") return;
-    const saved: SavedProgress = { version: 3, classId, styleId, level, act, showPlan, completedTaskIds, linkCount, readiness, selectedAuras, totalMana, currentItemText, itemText, currentGemText, candidateGemText, completedLabs };
+    const saved: SavedProgress = { version: 4, classId, styleId, level, act, showPlan, completedTaskIds, linkCount, readiness, selectedAuras, totalMana, currentItemText, itemText, currentGemText, candidateGemText, completedLabs };
     window.localStorage.setItem(progressKey, JSON.stringify(saved));
   }, [act, candidateGemText, classId, completedLabs, completedTaskIds, currentGemText, currentItemText, itemText, level, linkCount, loadState, readiness, selectedAuras, showPlan, styleId, totalMana]);
 
@@ -386,12 +388,12 @@ export default function Home() {
       </header>
 
       <section className="hero" id="top">
-        <div className="hero-copy"><p className="eyebrow"><span /> Твой маршрут по Рэкласту</p><h1>Собери персонажа<br />без лишней <em>сложности</em></h1><p className="hero-text">Выбери класс и любимый стиль игры — получи понятную цепочку навыков от первого акта до карт.</p><div className="hero-facts" aria-label="Преимущества"><span><b>✓</b> Три шага за раз</span><span><b>✓</b> Прогресс сохраняется</span><span><b>✓</b> Подходит новичкам</span></div></div>
-        <aside className="route-preview" aria-label="Пример маршрута развития"><div className="preview-orbit orbit-one" /><div className="preview-orbit orbit-two" /><div className="preview-card preview-card-back"><span>Акт 6–10</span><strong>Основная связка</strong></div><div className="preview-card preview-card-main"><div className="preview-topline"><span className="preview-level">УРОВЕНЬ 32</span><span>02 / 04</span></div><div className="skill-glyph" aria-hidden="true">✦</div><p>Основной навык</p><h2>Костолом</h2><div className="mini-tags"><span>Физический</span><span>Ближний бой</span></div><div className="preview-progress"><i /></div><small>Следующий этап: уровень 68</small></div><span className="floating-note note-one">+ здоровье</span><span className="floating-note note-two">+ броня</span></aside>
+        <div className="hero-copy"><p className="eyebrow"><span /> Персональный маршрут по Рэкласту</p><h1>Дворянка с «Искрой»<br />без лишней <em>сложности</em></h1><p className="hero-text">Твой билд уже настроен: развивай «Искру» от первого акта до карт и открывай только ближайшие подсказки.</p><div className="hero-facts" aria-label="Преимущества"><span><b>✓</b> Три шага за раз</span><span><b>✓</b> Прогресс сохраняется</span><span><b>✓</b> Подходит новичкам</span></div></div>
+        <aside className="route-preview" aria-label="Пример маршрута развития"><div className="preview-orbit orbit-one" /><div className="preview-orbit orbit-two" /><div className="preview-card preview-card-back"><span>Акт 6–10</span><strong>Искра + Эхо магии</strong></div><div className="preview-card preview-card-main"><div className="preview-topline"><span className="preview-level">УРОВЕНЬ 32</span><span>02 / 04</span></div><div className="skill-glyph" aria-hidden="true">✦</div><p>Основной навык</p><h2>Искра</h2><div className="mini-tags"><span>Молния</span><span>Снаряд</span></div><div className="preview-progress"><i /></div><small>Следующий этап: критическая Искра</small></div><span className="floating-note note-one">+ скорость</span><span className="floating-note note-two">+ мана</span></aside>
       </section>
 
       <section className="builder-section" id="builder">
-        <div className="section-heading"><p className="section-kicker">Начнём с главного</p><h2>Как ты хочешь играть?</h2><p>Класс, стиль и текущий этап — остальное соберём сами.</p></div>
+        <div className="section-heading"><p className="section-kicker">Профиль уже настроен</p><h2>Твоя Дворянка с «Искрой»</h2><p>Проверь текущий уровень — класс и стиль уже выбраны, но их всё ещё можно изменить.</p></div>
         {loadState === "loading" && <div className="data-state" role="status"><span className="data-spinner" aria-hidden="true" /><h3>Загружаем каталог</h3><p>Классы, связки и дерево пассивов уже в пути.</p></div>}
         {loadState === "error" && <div className="data-state data-state-error" role="alert"><span aria-hidden="true">!</span><h3>Каталог не загрузился</h3><p>Проверь соединение и попробуй ещё раз.</p><button className="secondary-button" type="button" onClick={() => void requestCatalog()}>Повторить</button></div>}
 
