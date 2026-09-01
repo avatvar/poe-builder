@@ -32,7 +32,7 @@ test("renders the Exile Path builder", async () => {
 
 test("keeps the build catalog in separate valid JSON files", async () => {
   const dataRoot = new URL("../public/data/", import.meta.url);
-  const [classes, styles, details, passives, masteries, gems, bosses, tools, beginners] = await Promise.all([
+  const [classes, styles, details, passives, masteries, gems, bosses, tools, beginners, levelCheckpoints] = await Promise.all([
     readFile(new URL("classes.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("styles.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("stage-details.json", dataRoot), "utf8").then(JSON.parse),
@@ -42,6 +42,7 @@ test("keeps the build catalog in separate valid JSON files", async () => {
     readFile(new URL("boss-guides.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("support-tools.json", dataRoot), "utf8").then(JSON.parse),
     readFile(new URL("beginner-guides.json", dataRoot), "utf8").then(JSON.parse),
+    readFile(new URL("level-checkpoints.json", dataRoot), "utf8").then(JSON.parse),
   ]);
 
   assert.equal(classes.length, 7);
@@ -55,6 +56,14 @@ test("keeps the build catalog in separate valid JSON files", async () => {
   assert.deepEqual(Object.keys(beginners.ascendancyPriorities).sort(), Object.keys(styles).sort());
   assert.equal(beginners.labs.length, 4);
   assert.equal(beginners.checkpoints.length, 4);
+  assert.equal(levelCheckpoints.length, 20);
+  assert.deepEqual(levelCheckpoints.map((checkpoint) => checkpoint.level), Array.from({ length: 20 }, (_, index) => (index + 1) * 5));
+  for (const checkpoint of levelCheckpoints) {
+    assert.ok(checkpoint.title);
+    assert.ok(checkpoint.focus);
+    assert.ok(checkpoint.life > 0);
+    assert.ok(checkpoint.links >= 2 && checkpoint.links <= 6);
+  }
   assert.equal(classes.find((classOption) => classOption.id === "scion")?.styles[0], "stormburst");
   assert.ok(styles.stormburst);
   assert.deepEqual(gems.stormburst.mainByStage, ["Искра", "Грозовой взрыв", "Грозовой взрыв", "Грозовой взрыв"]);
@@ -103,4 +112,6 @@ test("includes the six beginner helpers", async () => {
   assert.match(page, /Переход навыка и полный маршрут/);
   assert.match(page, /Сравнение двух предметов/);
   assert.match(page, /Сравнить текущий и новый камень/);
+  assert.match(page, /Путь каждые 5 уровней/);
+  assert.match(page, /Последняя пройденная/);
 });

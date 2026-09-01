@@ -238,6 +238,39 @@ main { min-height: 100vh; overflow: hidden; }
 .next-action.is-done .action-check { color: white; border-color: var(--green); background: var(--green); }
 .next-action.is-done strong { text-decoration: line-through; }
 .text-button { margin: 16px 0 0 auto; padding: 0; display: block; border: 0; color: var(--muted); background: transparent; cursor: pointer; font-size: var(--font-small); font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.level-route { margin-top: 42px; overflow: hidden; border: 1px solid var(--line); border-radius: 18px 6px 18px 6px; background: var(--surface); box-shadow: var(--shadow); }
+.level-route-heading { padding: 26px; display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; border-bottom: 1px solid var(--line); }
+.level-route-heading .section-kicker { margin-bottom: 10px; }
+.level-route-heading h2 { margin: 0; font-family: var(--font-unbounded), sans-serif; font-size: var(--font-heading); }
+.level-route-heading p:last-child { max-width: 680px; margin: 9px 0 0; color: var(--muted); font-size: var(--font-small); line-height: 1.55; }
+.level-route-progress { padding: 17px 26px; display: grid; grid-template-columns: auto minmax(150px, 1fr) auto; align-items: center; gap: 20px; background: var(--surface-soft); }
+.level-route-progress > div:first-child { display: flex; flex-direction: column; gap: 2px; }
+.level-route-progress span { color: var(--muted); font-size: var(--font-small); }
+.level-route-progress strong { font-size: var(--font-body); }
+.level-route-list { position: relative; padding: 10px 26px 18px; }
+.level-route-list::before { content: ""; position: absolute; top: 38px; bottom: 38px; left: 48px; width: 1px; background: var(--line); }
+.level-route-more { position: relative; z-index: 1; margin: 0; padding: 10px 0; color: var(--muted); background: var(--surface); font-size: var(--font-small); text-align: center; }
+.level-checkpoint { position: relative; z-index: 1; border-bottom: 1px solid var(--line); background: var(--surface); }
+.level-checkpoint:last-of-type { border-bottom: 0; }
+.level-checkpoint > summary, .level-checkpoint-summary { min-height: 76px; padding: 12px 0; display: grid; grid-template-columns: 48px 1fr auto auto; align-items: center; gap: 14px; list-style: none; }
+.level-checkpoint > summary { cursor: pointer; }
+.level-checkpoint > summary::-webkit-details-marker { display: none; }
+.level-checkpoint > summary > i { width: 28px; color: var(--subtle); font-size: var(--font-body); font-style: normal; text-align: center; transition: transform .2s ease; }
+.level-checkpoint[open] > summary > i { transform: rotate(45deg); }
+.level-checkpoint-number { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--muted); background: var(--surface-soft); font-family: var(--font-unbounded), sans-serif; font-size: var(--font-small); font-weight: 900; }
+.level-checkpoint.is-passed .level-checkpoint-number { color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 35%, var(--line)); }
+.level-checkpoint.is-active { margin: 5px -10px; padding: 0 10px 8px; border: 1px solid var(--accent); border-radius: 14px 5px 14px 5px; background: var(--accent-soft); box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 12%, transparent); }
+.level-checkpoint.is-active .level-checkpoint-number { color: white; background: var(--accent); }
+.level-checkpoint-title { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.level-checkpoint-title strong { font-size: var(--font-body); }
+.level-checkpoint-title small, .level-checkpoint-state { color: var(--muted); font-size: var(--font-small); }
+.level-checkpoint-state { white-space: nowrap; }
+.level-checkpoint.is-active .level-checkpoint-state { color: var(--accent); font-weight: 900; }
+.level-checkpoint-advice { padding: 2px 0 18px 62px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
+.level-checkpoint-advice > div { min-width: 0; display: flex; align-items: flex-start; gap: 10px; }
+.level-checkpoint-advice > div > span { width: 28px; height: 28px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 8px 3px 8px 3px; color: var(--accent); background: var(--surface); font-size: var(--font-small); font-weight: 900; }
+.level-checkpoint-advice p { margin: 0; color: var(--muted); font-size: var(--font-small); line-height: 1.5; }
+.level-checkpoint-advice strong { display: block; margin-bottom: 3px; color: var(--text); }
 .tools-heading { margin: 72px 0 25px; text-align: center; }
 .tools-heading h2 { margin: 0; font-family: var(--font-unbounded), sans-serif; font-size: var(--font-display); letter-spacing: -1.3px; }
 .tools-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
@@ -471,6 +504,17 @@ footer > span { color: var(--subtle); }
   .plan-heading { align-items: flex-start; flex-direction: column; }
   .journey-card { padding: 18px; }
   .journey-progress { grid-template-columns: 1fr; gap: 12px; }
+  .level-route { margin-top: 30px; }
+  .level-route-heading { padding: 20px 18px; align-items: stretch; flex-direction: column; gap: 18px; }
+  .level-route-heading .secondary-button { width: 100%; }
+  .level-route-progress { padding: 15px 18px; grid-template-columns: 1fr; gap: 9px; }
+  .level-route-list { padding: 8px 18px 15px; }
+  .level-route-list::before { left: 39px; }
+  .level-checkpoint > summary, .level-checkpoint-summary { grid-template-columns: 44px 1fr auto; gap: 10px; }
+  .level-checkpoint > summary > i { grid-column: 3; grid-row: 1; }
+  .level-checkpoint-state { grid-column: 2 / -1; }
+  .level-checkpoint.is-active { margin-inline: -6px; padding-inline: 6px; }
+  .level-checkpoint-advice { padding-left: 54px; grid-template-columns: 1fr; gap: 12px; }
   .tools-heading { margin-top: 55px; }
   .tools-list { grid-template-columns: 1fr; }
   .tool-panel[open] { grid-column: auto; }

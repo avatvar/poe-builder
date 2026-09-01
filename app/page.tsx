@@ -57,6 +57,7 @@ type SupportTools = {
 };
 type LabGuide = { id: string; title: string; level: number; reward: string; preparation: string };
 type CheckpointGuide = { id: string; maxLevel: number; title: string; description: string; tasks: string[] };
+type LevelCheckpoint = { level: number; title: string; focus: string; life: number; resistance: number; links: number };
 type TransitionGuide = { from: string; to: string; level: number; keep: string; steps: string[] };
 type BeginnerGuides = {
   labs: LabGuide[];
@@ -74,6 +75,7 @@ type Catalog = {
   bossGuides: Record<StyleId, BossGuide>;
   supportTools: SupportTools;
   beginnerGuides: BeginnerGuides;
+  levelCheckpoints: LevelCheckpoint[];
 };
 
 type Readiness = { life: number; fire: number; cold: number; lightning: number; links: number; bossesFeelOk: boolean };
@@ -107,6 +109,7 @@ const dataFiles = {
   bossGuides: "data/boss-guides.json",
   supportTools: "data/support-tools.json",
   beginnerGuides: "data/beginner-guides.json",
+  levelCheckpoints: "data/level-checkpoints.json",
 } as const;
 const defaultReadiness: Readiness = { life: 0, fire: 0, cold: 0, lightning: 0, links: 3, bossesFeelOk: false };
 
@@ -117,7 +120,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 }
 
 async function loadCatalog(): Promise<Catalog> {
-  const [classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools, beginnerGuides] = await Promise.all([
+  const [classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools, beginnerGuides, levelCheckpoints] = await Promise.all([
     fetchJson<ClassOption[]>(dataFiles.classes),
     fetchJson<Record<StyleId, StyleOption>>(dataFiles.styles),
     fetchJson<Record<StyleId, StageDetail[]>>(dataFiles.stageDetails),
@@ -127,8 +130,9 @@ async function loadCatalog(): Promise<Catalog> {
     fetchJson<Record<StyleId, BossGuide>>(dataFiles.bossGuides),
     fetchJson<SupportTools>(dataFiles.supportTools),
     fetchJson<BeginnerGuides>(dataFiles.beginnerGuides),
+    fetchJson<LevelCheckpoint[]>(dataFiles.levelCheckpoints),
   ]);
-  return { classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools, beginnerGuides };
+  return { classes, styles, stageDetails, passiveGuides, masteryGuides, gemGuides, bossGuides, supportTools, beginnerGuides, levelCheckpoints };
 }
 
 function getStageIndex(level: number) {
@@ -262,6 +266,22 @@ function ThemeIcon({ theme }: { theme: Theme }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" /></svg>;
 }
 
+function CheckpointAdvice({ catalog, checkpoint, styleId }: { catalog: Catalog; checkpoint: LevelCheckpoint; styleId: StyleId }) {
+  const checkpointStageIndex = getStageIndex(checkpoint.level);
+  const stage = catalog.styles[styleId].stages[checkpointStageIndex];
+  const details = catalog.stageDetails[styleId][checkpointStageIndex];
+  const passive = catalog.passiveGuides[styleId].milestones[checkpointStageIndex];
+
+  return (
+    <div className="level-checkpoint-advice">
+      <div><span>01</span><p><strong>Связка</strong>{stage.skills}</p></div>
+      <div><span>02</span><p><strong>Пассивы</strong>{passive.nodes.slice(0, 2).join(" → ")}</p></div>
+      <div><span>03</span><p><strong>Защита</strong>{checkpoint.life}+ здоровья · {checkpoint.resistance}% сопротивлений · {checkpoint.links}L</p></div>
+      <div><span>04</span><p><strong>Как играть</strong>{checkpoint.focus} {details.gameplay}</p></div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [theme, setTheme] = useState<Theme>("light");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -281,6 +301,7 @@ export default function Home() {
   const [currentGemText, setCurrentGemText] = useState("");
   const [candidateGemText, setCandidateGemText] = useState("");
   const [completedLabs, setCompletedLabs] = useState<string[]>([]);
+  const [showAllCheckpoints, setShowAllCheckpoints] = useState(false);
 
   const selectedClass = catalog?.classes.find((item) => item.id === classId);
   const selectedStyle = catalog?.styles[styleId];
@@ -296,6 +317,7 @@ export default function Home() {
       const nextCatalog = await loadCatalog();
       const firstClass = nextCatalog.classes[0];
       if (!firstClass || !firstClass.styles[0]) throw new Error("Каталог классов пуст");
+      if (!nextCatalog.levelCheckpoints[0]) throw new Error("Маршрут контрольных точек пуст");
       let saved: Partial<SavedProgress> | null = null;
       try { saved = JSON.parse(window.localStorage.getItem(progressKey) ?? "null") as Partial<SavedProgress> | null; } catch { saved = null; }
       const hasSavedProgress = saved?.version === 5;
@@ -412,6 +434,22 @@ export default function Home() {
 
   const auraReservation = catalog ? selectedAuras.reduce((sum, id) => sum + (catalog.supportTools.auras[id]?.reservation ?? 0), 0) : 0;
   const freeMana = Math.max(0, Math.round(totalMana * (100 - auraReservation) / 100));
+  const levelRoute = catalog ? (() => {
+    const passed = catalog.levelCheckpoints.filter((checkpoint) => checkpoint.level <= level);
+    const active = passed.at(-1) ?? catalog.levelCheckpoints[0];
+    const activeIndex = Math.max(0, catalog.levelCheckpoints.findIndex((checkpoint) => checkpoint.level === active.level));
+    const startIndex = Math.max(0, activeIndex - 2);
+    const endIndex = Math.min(catalog.levelCheckpoints.length, activeIndex + 4);
+    return {
+      active,
+      activeIndex,
+      passedCount: passed.length,
+      startIndex,
+      endIndex,
+      visible: showAllCheckpoints ? catalog.levelCheckpoints : catalog.levelCheckpoints.slice(startIndex, endIndex),
+      isUpcoming: passed.length === 0,
+    };
+  })() : null;
 
   return (
     <main>
@@ -453,6 +491,24 @@ export default function Home() {
             <div className="next-actions">{journey.tasks.map((task) => { const done = completedTaskIds.includes(task.id); return <label className={`next-action ${done ? "is-done" : ""}`} key={task.id}><input type="checkbox" checked={done} onChange={() => toggleTask(task.id)} /><span className="action-check" aria-hidden="true">✓</span><span><strong>{task.title}</strong><small>{task.detail}</small></span></label>; })}</div>
             {journey.complete > 0 && <button className="text-button" type="button" onClick={() => setCompletedTaskIds((current) => current.filter((id) => !journey.tasks.some((task) => task.id === id)))}>Сбросить отметки этапа</button>}
           </div>
+
+          {levelRoute && (
+            <section className="level-route" aria-labelledby="level-route-title">
+              <div className="level-route-heading"><div><p className="section-kicker">Контрольные точки</p><h2 id="level-route-title">Путь каждые 5 уровней</h2><p>Последняя пройденная точка открыта автоматически. Остальные можно развернуть при необходимости.</p></div><button className="secondary-button" type="button" onClick={() => setShowAllCheckpoints((current) => !current)}>{showAllCheckpoints ? "Показать только соседние" : `Показать весь путь (${catalog.levelCheckpoints.length})`}</button></div>
+              <div className="level-route-progress"><div><span>Пройдено</span><strong>{levelRoute.passedCount} из {catalog.levelCheckpoints.length}</strong></div><div className="progress-track" role="progressbar" aria-label="Пройденные контрольные точки" aria-valuemin={0} aria-valuemax={catalog.levelCheckpoints.length} aria-valuenow={levelRoute.passedCount}><i style={{ width: `${levelRoute.passedCount / catalog.levelCheckpoints.length * 100}%` }} /></div><span>{levelRoute.isUpcoming ? "Следующая" : "Открыта"} точка: уровень {levelRoute.active.level}</span></div>
+              <div className="level-route-list">
+                {!showAllCheckpoints && levelRoute.startIndex > 0 && <p className="level-route-more">Ещё {levelRoute.startIndex} пройденных точек выше</p>}
+                {levelRoute.visible.map((checkpoint) => {
+                  const isActive = checkpoint.level === levelRoute.active.level;
+                  const isPassed = checkpoint.level <= level;
+                  const state = isActive ? levelRoute.isUpcoming ? "Следующая точка" : "Последняя пройденная" : isPassed ? "Пройдено" : "Впереди";
+                  const heading = <><span className="level-checkpoint-number">{checkpoint.level}</span><span className="level-checkpoint-title"><strong>{checkpoint.title}</strong><small>Контрольная точка уровня {checkpoint.level}</small></span><span className="level-checkpoint-state">{state}</span></>;
+                  return isActive ? <article className="level-checkpoint is-active" key={checkpoint.level}><div className="level-checkpoint-summary">{heading}</div><CheckpointAdvice catalog={catalog} checkpoint={checkpoint} styleId={styleId} /></article> : <details className={`level-checkpoint ${isPassed ? "is-passed" : ""}`} key={checkpoint.level}><summary>{heading}<i aria-hidden="true">＋</i></summary><CheckpointAdvice catalog={catalog} checkpoint={checkpoint} styleId={styleId} /></details>;
+                })}
+                {!showAllCheckpoints && levelRoute.endIndex < catalog.levelCheckpoints.length && <p className="level-route-more">Ещё {catalog.levelCheckpoints.length - levelRoute.endIndex} точек впереди</p>}
+              </div>
+            </section>
+          )}
 
           <div className="tools-heading"><p className="section-kicker">Когда понадобится</p><h2>Открой только нужную подсказку</h2></div>
           <div className="tools-list">
