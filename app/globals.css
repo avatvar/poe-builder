@@ -80,7 +80,8 @@ main { min-height: 100vh; overflow: hidden; }
 .header-nav > a { color: var(--muted); transition: color .2s ease; }
 .header-nav > a:hover { color: var(--text); }
 .beta-pill { color: var(--accent); background: var(--accent-soft); padding: 7px 11px; border-radius: 999px; font-size: var(--font-small); letter-spacing: .08em; text-transform: uppercase; }
-.theme-toggle { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: var(--font-heading); display: grid; place-items: center; transition: transform .2s ease, background .2s ease; }
+.theme-toggle { width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: grid; place-items: center; transition: transform .2s ease, background .2s ease; }
+.theme-toggle svg { display: block; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .theme-toggle:hover { transform: rotate(8deg); background: var(--surface-soft); }
 
 .hero {

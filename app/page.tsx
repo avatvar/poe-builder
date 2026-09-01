@@ -254,6 +254,14 @@ function ToolPanel({ number, title, subtitle, children }: { number: string; titl
   );
 }
 
+function ThemeIcon({ theme }: { theme: Theme }) {
+  if (theme === "light") {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 15.6A8.5 8.5 0 0 1 8.4 3.6a8.5 8.5 0 1 0 12 12Z" /></svg>;
+  }
+
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" /></svg>;
+}
+
 export default function Home() {
   const [theme, setTheme] = useState<Theme>("light");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
@@ -399,7 +407,7 @@ export default function Home() {
     <main>
       <header className="site-header">
         <a className="brand" href="#top" aria-label="Exile Path Путеводитель — на главную"><span className="brand-mark">EP</span><span className="brand-copy"><span>Exile Path</span><small>Путеводитель</small></span></a>
-        <nav className="header-nav" aria-label="Основная навигация"><a href="#builder">Конструктор</a><a href="#how-it-works">Как это работает</a><span className="beta-pill">Тестовая версия</span><button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={theme === "light" ? "Включить тёмную тему" : "Включить светлую тему"}><span aria-hidden="true">{theme === "light" ? "☾" : "☀"}</span></button></nav>
+        <nav className="header-nav" aria-label="Основная навигация"><a href="#builder">Конструктор</a><a href="#how-it-works">Как это работает</a><span className="beta-pill">Тестовая версия</span><button className="theme-toggle" type="button" onClick={toggleTheme} aria-label={theme === "light" ? "Включить тёмную тему" : "Включить светлую тему"}><ThemeIcon theme={theme} /></button></nav>
       </header>
 
       <section className="hero" id="top">
