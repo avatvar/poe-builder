@@ -21,8 +21,8 @@ test("renders the Exile Path builder", async () => {
 
   const html = await response.text();
   assert.match(html, /Exile Path/);
-  assert.match(html, /Дворянка с «Искрой»/);
-  assert.match(html, /Твоя Дворянка с «Искрой»/);
+  assert.match(html, /Дворянка с «Грозовым взрывом»/);
+  assert.match(html, /Твоя Дворянка с «Грозовым взрывом»/);
   assert.match(html, /Загружаем каталог/);
   assert.doesNotMatch(html, /codex-preview/);
   assert.doesNotMatch(html, /react-loading-skeleton/);
@@ -53,9 +53,11 @@ test("keeps the build catalog in separate valid JSON files", async () => {
   assert.deepEqual(Object.keys(beginners.ascendancyPriorities).sort(), Object.keys(styles).sort());
   assert.equal(beginners.labs.length, 4);
   assert.equal(beginners.checkpoints.length, 4);
-  assert.equal(classes.find((classOption) => classOption.id === "scion")?.styles[0], "spark");
-  assert.ok(styles.spark);
-  assert.deepEqual(gems.spark.mainByStage, ["Искра", "Искра", "Искра", "Искра"]);
+  assert.equal(classes.find((classOption) => classOption.id === "scion")?.styles[0], "stormburst");
+  assert.ok(styles.stormburst);
+  assert.deepEqual(gems.stormburst.mainByStage, ["Искра", "Грозовой взрыв", "Грозовой взрыв", "Грозовой взрыв"]);
+  assert.deepEqual(gems.stormburst.supports.slice(0, 2), ["Физический урон в молнию", "Ускоренное сотворение чар"]);
+  assert.equal(beginners.transitions.stormburst.level, 22);
 
   for (const style of Object.values(styles)) {
     assert.equal(style.stages.length, 4);
@@ -81,6 +83,8 @@ test("persists the beginner profile and progress locally", async () => {
   assert.match(page, /exile-path-progress-v2/);
   assert.match(page, /localStorage\.getItem\(progressKey\)/);
   assert.match(page, /localStorage\.setItem\(progressKey/);
+  assert.match(page, /version: 5/);
+  assert.match(page, /useState\(22\)/);
   assert.match(page, /completedTaskIds/);
   assert.match(page, /completedLabs/);
   assert.match(page, /currentItemText/);

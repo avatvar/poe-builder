@@ -6,7 +6,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 type Theme = "light" | "dark";
 type ClassId = "marauder" | "ranger" | "witch" | "duelist" | "templar" | "shadow" | "scion";
-type StyleId = "melee" | "ranged" | "spells" | "minions" | "totems" | "traps" | "poison" | "bleed" | "elemental" | "spark" | "hybrid";
+type StyleId = "melee" | "ranged" | "spells" | "minions" | "totems" | "traps" | "poison" | "bleed" | "elemental" | "stormburst" | "spark" | "hybrid";
 
 type ClassOption = {
   id: ClassId;
@@ -78,7 +78,7 @@ type Catalog = {
 
 type Readiness = { life: number; fire: number; cold: number; lightning: number; links: number; bossesFeelOk: boolean };
 type SavedProgress = {
-  version: 4;
+  version: 5;
   classId: ClassId;
   styleId: StyleId;
   level: number;
@@ -141,7 +141,7 @@ function getStageIndex(level: number) {
 function getReadinessTargets(level: number, act: number) {
   const life = level < 40 ? 1000 : level < 55 ? 1700 : level < 68 ? 2500 : 3500;
   const resistance = act >= 6 ? 75 : 60;
-  const links = level < 18 ? 3 : level < 55 ? 4 : 5;
+  const links = level < 32 ? 3 : level < 55 ? 4 : 5;
   return { life, resistance, links };
 }
 
@@ -160,17 +160,30 @@ function getItemStats(text: string) {
   const elementalAverage = [...elementalLine.matchAll(/(\d+)-(\d+)/g)].reduce((sum, match) => sum + (Number(match[1]) + Number(match[2])) / 2, 0);
   const physicalAverage = physical ? (Number(physical[1]) + Number(physical[2])) / 2 : 0;
   const weaponDps = attacks > 0 ? Math.round((physicalAverage + elementalAverage) * attacks) : 0;
+  const spellDamage = [...text.matchAll(/(\d+)%\s+увеличение урона (?:от )?чар/gi)].reduce((sum, match) => sum + Number(match[1]), 0);
+  const lightningDamage = [...text.matchAll(/(\d+)%\s+увеличение урона (?:от )?молни(?:ей|и)/gi)].reduce((sum, match) => sum + Number(match[1]), 0);
+  const castSpeed = [...text.matchAll(/(\d+)%\s+увеличение скорости сотворения чар/gi)].reduce((sum, match) => sum + Number(match[1]), 0);
+  const gemLevels = [...text.matchAll(/\+(\d+)\s+к уровню (?:всех )?камней[^\n]*(?:молнии|чар молнии|физических чар)/gi)].reduce((sum, match) => sum + Number(match[1]), 0);
+  const spellPower = spellDamage + lightningDamage + castSpeed * 2 + gemLevels * 30;
   const requirements = text.split(/Требования:/i)[1]?.split(/--------/)[0] ?? "";
   const requiredLevel = Number(requirements.match(/Уровень:\s*(\d+)/i)?.[1] ?? 0);
-  return { name, life, resistances: resistances + allResistance, movement, weaponDps, requiredLevel };
+  return { name, life, resistances: resistances + allResistance, movement, weaponDps, spellPower, spellDamage, lightningDamage, castSpeed, gemLevels, requiredLevel };
 }
 
-function analyzeItem(text: string, level: number) {
+function isSpellStyle(styleId: StyleId) {
+  return styleId === "spells" || styleId === "spark" || styleId === "stormburst";
+}
+
+function analyzeItem(text: string, level: number, styleId: StyleId) {
   const stats = getItemStats(text);
   if (!stats) return null;
   const reasons: Array<{ good: boolean; text: string }> = [];
 
-  if (stats.weaponDps > 0) {
+  if (isSpellStyle(styleId)) {
+    if (stats.spellPower > 0) reasons.push({ good: stats.spellPower >= 30, text: `Полезные свойства чар: урон ${stats.spellDamage + stats.lightningDamage}%, скорость ${stats.castSpeed}%, уровни камней +${stats.gemLevels}.` });
+    else reasons.push({ good: false, text: "Не найдены урон чар или молнии, скорость сотворения либо уровни подходящих камней." });
+    if (stats.weaponDps > 0) reasons.push({ good: false, text: "Физический DPS и скорость атаки оружия не усиливают основное заклинание." });
+  } else if (stats.weaponDps > 0) {
     const target = level < 40 ? 100 : level < 68 ? 250 : 350;
     reasons.push({ good: stats.weaponDps >= target, text: `Суммарный DPS оружия: примерно ${stats.weaponDps}; ориентир для этапа — ${target}+.` });
   }
@@ -186,16 +199,18 @@ function analyzeItem(text: string, level: number) {
   return { verdict, tone: blocked ? "mixed" : score >= Math.max(2, reasons.length - 1) ? "good" : score >= 1 ? "mixed" : "bad", reasons: reasons.slice(0, 3) };
 }
 
-function compareItems(currentText: string, candidateText: string, level: number) {
+function compareItems(currentText: string, candidateText: string, level: number, styleId: StyleId) {
   const current = getItemStats(currentText);
   const candidate = getItemStats(candidateText);
   if (!current || !candidate) return null;
-  const weaponComparison = current.weaponDps > 0 || candidate.weaponDps > 0;
-  const currentScore = weaponComparison ? current.weaponDps : current.life + current.resistances * 1.5 + current.movement;
-  const candidateScore = weaponComparison ? candidate.weaponDps : candidate.life + candidate.resistances * 1.5 + candidate.movement;
+  const spellComparison = isSpellStyle(styleId) && (current.spellPower > 0 || candidate.spellPower > 0);
+  const weaponComparison = !isSpellStyle(styleId) && (current.weaponDps > 0 || candidate.weaponDps > 0);
+  const currentScore = spellComparison ? current.spellPower : weaponComparison ? current.weaponDps : current.life + current.resistances * 1.5 + current.movement;
+  const candidateScore = spellComparison ? candidate.spellPower : weaponComparison ? candidate.weaponDps : candidate.life + candidate.resistances * 1.5 + candidate.movement;
   const delta = currentScore > 0 ? Math.round((candidateScore - currentScore) / currentScore * 100) : candidateScore > 0 ? 100 : 0;
   const reasons: Array<{ good: boolean; text: string }> = [];
-  if (weaponComparison) reasons.push({ good: candidate.weaponDps >= current.weaponDps, text: `DPS оружия: ${current.weaponDps || "—"} → ${candidate.weaponDps || "—"} (${delta >= 0 ? "+" : ""}${delta}%).` });
+  if (spellComparison) reasons.push({ good: candidate.spellPower >= current.spellPower, text: `Полезные свойства чар: ${current.spellPower || "—"} → ${candidate.spellPower || "—"} условных очков (${delta >= 0 ? "+" : ""}${delta}%).` });
+  else if (weaponComparison) reasons.push({ good: candidate.weaponDps >= current.weaponDps, text: `DPS оружия: ${current.weaponDps || "—"} → ${candidate.weaponDps || "—"} (${delta >= 0 ? "+" : ""}${delta}%).` });
   if (candidate.life !== current.life) reasons.push({ good: candidate.life >= current.life, text: `Здоровье: +${current.life} → +${candidate.life}.` });
   if (candidate.resistances !== current.resistances) reasons.push({ good: candidate.resistances >= current.resistances, text: `Сумма сопротивлений: ${current.resistances}% → ${candidate.resistances}%.` });
   if (candidate.movement !== current.movement) reasons.push({ good: candidate.movement >= current.movement, text: `Скорость передвижения: ${current.movement}% → ${candidate.movement}%.` });
@@ -244,10 +259,10 @@ export default function Home() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [classId, setClassId] = useState<ClassId>("scion");
-  const [styleId, setStyleId] = useState<StyleId>("spark");
-  const [level, setLevel] = useState(1);
-  const [act, setAct] = useState(1);
-  const [showPlan, setShowPlan] = useState(false);
+  const [styleId, setStyleId] = useState<StyleId>("stormburst");
+  const [level, setLevel] = useState(22);
+  const [act, setAct] = useState(2);
+  const [showPlan, setShowPlan] = useState(true);
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([]);
   const [linkCount, setLinkCount] = useState(3);
   const [readiness, setReadiness] = useState<Readiness>(defaultReadiness);
@@ -263,8 +278,8 @@ export default function Home() {
   const selectedStyle = catalog?.styles[styleId];
   const stageIndex = getStageIndex(level);
   const currentStage = selectedStyle?.stages[stageIndex];
-  const itemAnalysis = useMemo(() => analyzeItem(itemText, level), [itemText, level]);
-  const itemComparison = useMemo(() => compareItems(currentItemText, itemText, level), [currentItemText, itemText, level]);
+  const itemAnalysis = useMemo(() => analyzeItem(itemText, level, styleId), [itemText, level, styleId]);
+  const itemComparison = useMemo(() => compareItems(currentItemText, itemText, level, styleId), [currentItemText, itemText, level, styleId]);
   const gemComparison = useMemo(() => compareGems(currentGemText, candidateGemText), [currentGemText, candidateGemText]);
 
   const requestCatalog = useCallback(async () => {
@@ -277,25 +292,25 @@ export default function Home() {
 
       let saved: Partial<SavedProgress> | null = null;
       try { saved = JSON.parse(window.localStorage.getItem(progressKey) ?? "null") as Partial<SavedProgress> | null; } catch { saved = null; }
-      const hasPersonalizedSave = saved?.version === 4;
+      const hasPersonalizedSave = saved?.version === 5;
       const savedClass = hasPersonalizedSave ? nextCatalog.classes.find((item) => item.id === saved?.classId) ?? personalizedClass : personalizedClass;
-      const savedStyle = hasPersonalizedSave && savedClass.styles.includes(saved?.styleId as StyleId) ? saved?.styleId as StyleId : savedClass.styles.includes("spark") ? "spark" : savedClass.styles[0];
+      const savedStyle = hasPersonalizedSave && savedClass.styles.includes(saved?.styleId as StyleId) ? saved?.styleId as StyleId : savedClass.styles.includes("stormburst") ? "stormburst" : savedClass.styles[0];
 
       setCatalog(nextCatalog);
       setClassId(savedClass.id);
       setStyleId(savedStyle);
-      setLevel(Math.min(100, Math.max(1, Number(saved?.level) || 1)));
-      setAct(Math.min(11, Math.max(1, Number(saved?.act) || 1)));
-      setShowPlan(Boolean(saved?.showPlan));
-      setCompletedTaskIds(Array.isArray(saved?.completedTaskIds) ? saved.completedTaskIds : []);
-      setLinkCount(Math.min(6, Math.max(3, Number(saved?.linkCount) || 3)));
-      setReadiness(saved?.readiness ? { ...defaultReadiness, ...saved.readiness } : defaultReadiness);
+      setLevel(hasPersonalizedSave ? Math.min(100, Math.max(1, Number(saved?.level) || 22)) : 22);
+      setAct(hasPersonalizedSave ? Math.min(11, Math.max(1, Number(saved?.act) || 2)) : 2);
+      setShowPlan(hasPersonalizedSave ? Boolean(saved?.showPlan) : true);
+      setCompletedTaskIds(hasPersonalizedSave && Array.isArray(saved?.completedTaskIds) ? saved.completedTaskIds : []);
+      setLinkCount(hasPersonalizedSave ? Math.min(6, Math.max(3, Number(saved?.linkCount) || 3)) : 3);
+      setReadiness(hasPersonalizedSave && saved?.readiness ? { ...defaultReadiness, ...saved.readiness } : defaultReadiness);
       setSelectedAuras(hasPersonalizedSave && Array.isArray(saved?.selectedAuras) ? saved.selectedAuras : [nextCatalog.supportTools.recommendedAuras[savedStyle][0]]);
       setTotalMana(Math.max(1, Number(saved?.totalMana) || 500));
-      setCurrentItemText(typeof saved?.currentItemText === "string" ? saved.currentItemText : "");
-      setItemText(typeof saved?.itemText === "string" ? saved.itemText : "");
-      setCurrentGemText(typeof saved?.currentGemText === "string" ? saved.currentGemText : "");
-      setCandidateGemText(typeof saved?.candidateGemText === "string" ? saved.candidateGemText : "");
+      setCurrentItemText(hasPersonalizedSave && typeof saved?.currentItemText === "string" ? saved.currentItemText : "");
+      setItemText(hasPersonalizedSave && typeof saved?.itemText === "string" ? saved.itemText : "");
+      setCurrentGemText(hasPersonalizedSave && typeof saved?.currentGemText === "string" ? saved.currentGemText : "");
+      setCandidateGemText(hasPersonalizedSave && typeof saved?.candidateGemText === "string" ? saved.candidateGemText : "");
       setCompletedLabs(hasPersonalizedSave && Array.isArray(saved?.completedLabs) ? saved.completedLabs : []);
       setLoadState("ready");
     } catch {
@@ -319,7 +334,7 @@ export default function Home() {
   }, [requestCatalog]);
   useEffect(() => {
     if (loadState !== "ready") return;
-    const saved: SavedProgress = { version: 4, classId, styleId, level, act, showPlan, completedTaskIds, linkCount, readiness, selectedAuras, totalMana, currentItemText, itemText, currentGemText, candidateGemText, completedLabs };
+    const saved: SavedProgress = { version: 5, classId, styleId, level, act, showPlan, completedTaskIds, linkCount, readiness, selectedAuras, totalMana, currentItemText, itemText, currentGemText, candidateGemText, completedLabs };
     window.localStorage.setItem(progressKey, JSON.stringify(saved));
   }, [act, candidateGemText, classId, completedLabs, completedTaskIds, currentGemText, currentItemText, itemText, level, linkCount, loadState, readiness, selectedAuras, showPlan, styleId, totalMana]);
 
@@ -388,12 +403,12 @@ export default function Home() {
       </header>
 
       <section className="hero" id="top">
-        <div className="hero-copy"><p className="eyebrow"><span /> Персональный маршрут по Рэкласту</p><h1>Дворянка с «Искрой»<br />без лишней <em>сложности</em></h1><p className="hero-text">Твой билд уже настроен: развивай «Искру» от первого акта до карт и открывай только ближайшие подсказки.</p><div className="hero-facts" aria-label="Преимущества"><span><b>✓</b> Три шага за раз</span><span><b>✓</b> Прогресс сохраняется</span><span><b>✓</b> Подходит новичкам</span></div></div>
-        <aside className="route-preview" aria-label="Пример маршрута развития"><div className="preview-orbit orbit-one" /><div className="preview-orbit orbit-two" /><div className="preview-card preview-card-back"><span>Акт 6–10</span><strong>Искра + Эхо магии</strong></div><div className="preview-card preview-card-main"><div className="preview-topline"><span className="preview-level">УРОВЕНЬ 32</span><span>02 / 04</span></div><div className="skill-glyph" aria-hidden="true">✦</div><p>Основной навык</p><h2>Искра</h2><div className="mini-tags"><span>Молния</span><span>Снаряд</span></div><div className="preview-progress"><i /></div><small>Следующий этап: критическая Искра</small></div><span className="floating-note note-one">+ скорость</span><span className="floating-note note-two">+ мана</span></aside>
+        <div className="hero-copy"><p className="eyebrow"><span /> Персональный маршрут по Рэкласту</p><h1>Дворянка с «Грозовым взрывом»<br />с <em>22 уровня</em></h1><p className="hero-text">Твой путь перестроен: уже взятые скорость чар и здоровье остаются, а следующие шаги развивают длительность сфер и защиту.</p><div className="hero-facts" aria-label="Преимущества"><span><b>✓</b> Переход без полного сброса</span><span><b>✓</b> Прогресс сохраняется</span><span><b>✓</b> Подходит новичкам</span></div></div>
+        <aside className="route-preview" aria-label="Пример маршрута развития"><div className="preview-orbit orbit-one" /><div className="preview-orbit orbit-two" /><div className="preview-card preview-card-back"><span>С 31 уровня</span><strong>Добавь Продление</strong></div><div className="preview-card preview-card-main"><div className="preview-topline"><span className="preview-level">УРОВЕНЬ 22</span><span>ПЕРЕХОД</span></div><div className="skill-glyph" aria-hidden="true">✦</div><p>Основной навык</p><h2>Грозовой взрыв</h2><div className="mini-tags"><span>Молния</span><span>Поддерживаемое</span></div><div className="preview-progress"><i /></div><small>Следующая цель: 1,6 сек. длительности</small></div><span className="floating-note note-one">+ длительность</span><span className="floating-note note-two">+ здоровье</span></aside>
       </section>
 
       <section className="builder-section" id="builder">
-        <div className="section-heading"><p className="section-kicker">Профиль уже настроен</p><h2>Твоя Дворянка с «Искрой»</h2><p>Проверь текущий уровень — класс и стиль уже выбраны, но их всё ещё можно изменить.</p></div>
+        <div className="section-heading"><p className="section-kicker">Профиль уже настроен</p><h2>Твоя Дворянка с «Грозовым взрывом»</h2><p>Стартовая точка — 22 уровень и второй акт. Проверь значения, если уже успел продвинуться дальше.</p></div>
         {loadState === "loading" && <div className="data-state" role="status"><span className="data-spinner" aria-hidden="true" /><h3>Загружаем каталог</h3><p>Классы, связки и дерево пассивов уже в пути.</p></div>}
         {loadState === "error" && <div className="data-state data-state-error" role="alert"><span aria-hidden="true">!</span><h3>Каталог не загрузился</h3><p>Проверь соединение и попробуй ещё раз.</p><button className="secondary-button" type="button" onClick={() => void requestCatalog()}>Повторить</button></div>}
 
@@ -458,6 +473,7 @@ export default function Home() {
             </ToolPanel>
 
             <ToolPanel number="07" title="Сравнение двух предметов" subtitle={itemComparison?.verdict ?? itemAnalysis?.verdict ?? "Вставь текущий предмет и кандидата"}>
+              {styleId === "stormburst" && <p className="tool-note"><b>Оружие для билда:</b> жезл или скипетр со щитом. Ищи уровни камней молнии или физических чар, урон чар, скорость сотворения и добавленный урон к чарам; физический DPS оружия не работает.</p>}
               <div className="compare-inputs"><label className="item-input"><span>Сейчас надето</span><textarea value={currentItemText} onChange={(event) => setCurrentItemText(event.target.value)} placeholder="Скопируй текущий предмет из игры…" rows={7} /></label><label className="item-input"><span>Кандидат на замену</span><textarea value={itemText} onChange={(event) => setItemText(event.target.value)} placeholder="Скопируй новый предмет из игры…" rows={7} /></label></div>
               {itemComparison ? <div className={`item-verdict verdict-${itemComparison.tone}`}><strong>{itemComparison.verdict}</strong><p className="comparison-name">{itemComparison.currentName} <span>→</span> {itemComparison.candidateName}</p><ul>{itemComparison.reasons.map((reason) => <li key={reason.text}><span>{reason.good ? "✓" : "!"}</span>{reason.text}</li>)}</ul><small>Оценка предварительная: особые свойства и механики билда могут изменить результат.</small></div> : itemAnalysis ? <div className={`item-verdict verdict-${itemAnalysis.tone}`}><strong>{itemAnalysis.verdict}</strong><ul>{itemAnalysis.reasons.map((reason) => <li key={reason.text}><span>{reason.good ? "✓" : "!"}</span>{reason.text}</li>)}</ul><small>Добавь текущий предмет, чтобы увидеть прямое сравнение.</small></div> : <p className="empty-helper">Можно начать только с кандидата — сайт даст предварительную оценку, а после второго описания сравнит их напрямую.</p>}
             </ToolPanel>
