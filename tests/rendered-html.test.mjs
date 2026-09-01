@@ -21,9 +21,11 @@ test("renders the Exile Path builder", async () => {
 
   const html = await response.text();
   assert.match(html, /Exile Path/);
-  assert.match(html, /Дворянка с «Грозовым взрывом»/);
-  assert.match(html, /Твоя Дворянка с «Грозовым взрывом»/);
+  assert.match(html, /Понятный путь развития/);
+  assert.match(html, /для любого класса/);
+  assert.match(html, /Выбери класс, стиль и этап/);
   assert.match(html, /Загружаем каталог/);
+  assert.doesNotMatch(html, /Твоя Дворянка/);
   assert.doesNotMatch(html, /codex-preview/);
   assert.doesNotMatch(html, /react-loading-skeleton/);
 });
@@ -84,7 +86,9 @@ test("persists the beginner profile and progress locally", async () => {
   assert.match(page, /localStorage\.getItem\(progressKey\)/);
   assert.match(page, /localStorage\.setItem\(progressKey/);
   assert.match(page, /version: 5/);
-  assert.match(page, /useState\(22\)/);
+  assert.match(page, /useState\(1\)/);
+  assert.match(page, /Избранный маршрут/);
+  assert.match(page, /Дворянка · Грозовой взрыв · уровень 22/);
   assert.match(page, /completedTaskIds/);
   assert.match(page, /completedLabs/);
   assert.match(page, /currentItemText/);

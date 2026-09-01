@@ -266,11 +266,11 @@ export default function Home() {
   const [theme, setTheme] = useState<Theme>("light");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
-  const [classId, setClassId] = useState<ClassId>("scion");
-  const [styleId, setStyleId] = useState<StyleId>("stormburst");
-  const [level, setLevel] = useState(22);
-  const [act, setAct] = useState(2);
-  const [showPlan, setShowPlan] = useState(true);
+  const [classId, setClassId] = useState<ClassId>("marauder");
+  const [styleId, setStyleId] = useState<StyleId>("melee");
+  const [level, setLevel] = useState(1);
+  const [act, setAct] = useState(1);
+  const [showPlan, setShowPlan] = useState(false);
   const [completedTaskIds, setCompletedTaskIds] = useState<string[]>([]);
   const [linkCount, setLinkCount] = useState(3);
   const [readiness, setReadiness] = useState<Readiness>(defaultReadiness);
@@ -296,30 +296,28 @@ export default function Home() {
       const nextCatalog = await loadCatalog();
       const firstClass = nextCatalog.classes[0];
       if (!firstClass || !firstClass.styles[0]) throw new Error("Каталог классов пуст");
-      const personalizedClass = nextCatalog.classes.find((item) => item.id === "scion") ?? firstClass;
-
       let saved: Partial<SavedProgress> | null = null;
       try { saved = JSON.parse(window.localStorage.getItem(progressKey) ?? "null") as Partial<SavedProgress> | null; } catch { saved = null; }
-      const hasPersonalizedSave = saved?.version === 5;
-      const savedClass = hasPersonalizedSave ? nextCatalog.classes.find((item) => item.id === saved?.classId) ?? personalizedClass : personalizedClass;
-      const savedStyle = hasPersonalizedSave && savedClass.styles.includes(saved?.styleId as StyleId) ? saved?.styleId as StyleId : savedClass.styles.includes("stormburst") ? "stormburst" : savedClass.styles[0];
+      const hasSavedProgress = saved?.version === 5;
+      const savedClass = hasSavedProgress ? nextCatalog.classes.find((item) => item.id === saved?.classId) ?? firstClass : firstClass;
+      const savedStyle = hasSavedProgress && savedClass.styles.includes(saved?.styleId as StyleId) ? saved?.styleId as StyleId : savedClass.styles[0];
 
       setCatalog(nextCatalog);
       setClassId(savedClass.id);
       setStyleId(savedStyle);
-      setLevel(hasPersonalizedSave ? Math.min(100, Math.max(1, Number(saved?.level) || 22)) : 22);
-      setAct(hasPersonalizedSave ? Math.min(11, Math.max(1, Number(saved?.act) || 2)) : 2);
-      setShowPlan(hasPersonalizedSave ? Boolean(saved?.showPlan) : true);
-      setCompletedTaskIds(hasPersonalizedSave && Array.isArray(saved?.completedTaskIds) ? saved.completedTaskIds : []);
-      setLinkCount(hasPersonalizedSave ? Math.min(6, Math.max(3, Number(saved?.linkCount) || 3)) : 3);
-      setReadiness(hasPersonalizedSave && saved?.readiness ? { ...defaultReadiness, ...saved.readiness } : defaultReadiness);
-      setSelectedAuras(hasPersonalizedSave && Array.isArray(saved?.selectedAuras) ? saved.selectedAuras : [nextCatalog.supportTools.recommendedAuras[savedStyle][0]]);
+      setLevel(hasSavedProgress ? Math.min(100, Math.max(1, Number(saved?.level) || 1)) : 1);
+      setAct(hasSavedProgress ? Math.min(11, Math.max(1, Number(saved?.act) || 1)) : 1);
+      setShowPlan(hasSavedProgress ? Boolean(saved?.showPlan) : false);
+      setCompletedTaskIds(hasSavedProgress && Array.isArray(saved?.completedTaskIds) ? saved.completedTaskIds : []);
+      setLinkCount(hasSavedProgress ? Math.min(6, Math.max(3, Number(saved?.linkCount) || 3)) : 3);
+      setReadiness(hasSavedProgress && saved?.readiness ? { ...defaultReadiness, ...saved.readiness } : defaultReadiness);
+      setSelectedAuras(hasSavedProgress && Array.isArray(saved?.selectedAuras) ? saved.selectedAuras : [nextCatalog.supportTools.recommendedAuras[savedStyle][0]]);
       setTotalMana(Math.max(1, Number(saved?.totalMana) || 500));
-      setCurrentItemText(hasPersonalizedSave && typeof saved?.currentItemText === "string" ? saved.currentItemText : "");
-      setItemText(hasPersonalizedSave && typeof saved?.itemText === "string" ? saved.itemText : "");
-      setCurrentGemText(hasPersonalizedSave && typeof saved?.currentGemText === "string" ? saved.currentGemText : "");
-      setCandidateGemText(hasPersonalizedSave && typeof saved?.candidateGemText === "string" ? saved.candidateGemText : "");
-      setCompletedLabs(hasPersonalizedSave && Array.isArray(saved?.completedLabs) ? saved.completedLabs : []);
+      setCurrentItemText(hasSavedProgress && typeof saved?.currentItemText === "string" ? saved.currentItemText : "");
+      setItemText(hasSavedProgress && typeof saved?.itemText === "string" ? saved.itemText : "");
+      setCurrentGemText(hasSavedProgress && typeof saved?.currentGemText === "string" ? saved.currentGemText : "");
+      setCandidateGemText(hasSavedProgress && typeof saved?.candidateGemText === "string" ? saved.candidateGemText : "");
+      setCompletedLabs(hasSavedProgress && Array.isArray(saved?.completedLabs) ? saved.completedLabs : []);
       setLoadState("ready");
     } catch {
       setLoadState("error");
@@ -361,6 +359,18 @@ export default function Home() {
   };
   const buildPlan = () => {
     setShowPlan(true);
+    window.setTimeout(() => document.getElementById("plan")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
+  const openFeaturedBuild = () => {
+    if (!catalog) return;
+    const featuredClass = catalog.classes.find((item) => item.id === "scion");
+    if (!featuredClass || !featuredClass.styles.includes("stormburst")) return;
+    setClassId("scion");
+    setStyleId("stormburst");
+    setLevel(22);
+    setAct(2);
+    setShowPlan(true);
+    setSelectedAuras([catalog.supportTools.recommendedAuras.stormburst[0]]);
     window.setTimeout(() => document.getElementById("plan")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
   const toggleTask = (id: string) => setCompletedTaskIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
@@ -411,17 +421,19 @@ export default function Home() {
       </header>
 
       <section className="hero" id="top">
-        <div className="hero-copy"><p className="eyebrow"><span /> Персональный маршрут по Рэкласту</p><h1>Дворянка с «Грозовым взрывом»<br />с <em>22 уровня</em></h1><p className="hero-text">Твой путь перестроен: уже взятые скорость чар и здоровье остаются, а следующие шаги развивают длительность сфер и защиту.</p><div className="hero-facts" aria-label="Преимущества"><span><b>✓</b> Переход без полного сброса</span><span><b>✓</b> Прогресс сохраняется</span><span><b>✓</b> Подходит новичкам</span></div></div>
-        <aside className="route-preview" aria-label="Пример маршрута развития"><div className="preview-orbit orbit-one" /><div className="preview-orbit orbit-two" /><div className="preview-card preview-card-back"><span>С 31 уровня</span><strong>Добавь Продление</strong></div><div className="preview-card preview-card-main"><div className="preview-topline"><span className="preview-level">УРОВЕНЬ 22</span><span>ПЕРЕХОД</span></div><div className="skill-glyph" aria-hidden="true">✦</div><p>Основной навык</p><h2>Грозовой взрыв</h2><div className="mini-tags"><span>Молния</span><span>Поддерживаемое</span></div><div className="preview-progress"><i /></div><small>Следующая цель: 1,6 сек. длительности</small></div><span className="floating-note note-one">+ длительность</span><span className="floating-note note-two">+ здоровье</span></aside>
+        <div className="hero-copy"><p className="eyebrow"><span /> Путеводитель для новичков</p><h1>Понятный путь развития <em>для любого класса</em></h1><p className="hero-text">Выбери класс, стиль игры и текущий этап — получи короткий маршрут по камням, пассивам и защите без лишней информации.</p><div className="hero-facts" aria-label="Преимущества"><span><b>✓</b> 7 классов</span><span><b>✓</b> 12 стилей игры</span><span><b>✓</b> Прогресс сохраняется</span></div></div>
+        <aside className="route-preview" aria-label="Пример маршрута развития"><div className="preview-orbit orbit-one" /><div className="preview-orbit orbit-two" /><div className="preview-card preview-card-back"><span>Следующий этап</span><strong>Добавь камень поддержки</strong></div><div className="preview-card preview-card-main"><div className="preview-topline"><span className="preview-level">ТВОЙ УРОВЕНЬ</span><span>МАРШРУТ</span></div><div className="skill-glyph" aria-hidden="true">✦</div><p>Ближайший шаг</p><h2>Навык + поддержка</h2><div className="mini-tags"><span>Связка</span><span>Пассивы</span></div><div className="preview-progress"><i /></div><small>Только советы для текущего этапа</small></div><span className="floating-note note-one">+ защита</span><span className="floating-note note-two">+ урон</span></aside>
       </section>
 
       <section className="builder-section" id="builder">
-        <div className="section-heading"><p className="section-kicker">Профиль уже настроен</p><h2>Твоя Дворянка с «Грозовым взрывом»</h2><p>Стартовая точка — 22 уровень и второй акт. Проверь значения, если уже успел продвинуться дальше.</p></div>
+        <div className="section-heading"><p className="section-kicker">Собери свой маршрут</p><h2>Выбери класс, стиль и этап</h2><p>Путеводитель подстроит ближайшие шаги под выбранного персонажа.</p></div>
         {loadState === "loading" && <div className="data-state" role="status"><span className="data-spinner" aria-hidden="true" /><h3>Загружаем каталог</h3><p>Классы, связки и дерево пассивов уже в пути.</p></div>}
         {loadState === "error" && <div className="data-state data-state-error" role="alert"><span aria-hidden="true">!</span><h3>Каталог не загрузился</h3><p>Проверь соединение и попробуй ещё раз.</p><button className="secondary-button" type="button" onClick={() => void requestCatalog()}>Повторить</button></div>}
 
         {loadState === "ready" && catalog && selectedClass && selectedStyle && (
           <div className="builder-card">
+            <div className="featured-build"><div><span>Избранный маршрут</span><strong>Дворянка · Грозовой взрыв · уровень 22</strong><small>Готовый путь с переходом от Искры и уже настроенными подсказками.</small></div><button className="secondary-button" type="button" onClick={openFeaturedBuild}>Открыть билд</button></div>
+            <div className="builder-divider" />
             <div className="builder-step"><div className="step-heading"><span className="step-number">01</span><div><h3>Выбери класс</h3><p>Он определит стартовую точку на дереве умений</p></div></div><div className="class-grid" role="group" aria-label="Выбор класса">{catalog.classes.map((item) => <button key={item.id} type="button" className={`class-option ${classId === item.id ? "is-selected" : ""}`} onClick={() => chooseClass(item)} aria-pressed={classId === item.id}><Image className="class-portrait" src={item.image} alt="" width={256} height={256} draggable={false} unoptimized /><span><strong>{item.name}</strong><small>{item.stats}</small></span><i aria-hidden="true">✓</i></button>)}</div></div>
             <div className="builder-divider" />
             <div className="builder-step"><div className="step-heading"><span className="step-number">02</span><div><h3>Выбери стиль игры</h3><p>Доступные варианты хорошо сочетаются с классом</p></div></div><div className="style-grid" role="group" aria-label="Выбор стиля игры">{selectedClass.styles.map((id) => { const style = catalog.styles[id]; return <button key={id} type="button" className={`style-option ${styleId === id ? "is-selected" : ""}`} onClick={() => chooseStyle(id)} aria-pressed={styleId === id} style={{ "--style-color": style.color } as CSSProperties}><span className="style-dot" /><span><strong>{style.name}</strong><small>{style.description}</small></span><span className="difficulty">{style.difficulty}</span></button>; })}</div></div>
