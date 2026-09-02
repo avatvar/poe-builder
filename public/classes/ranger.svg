@@ -1,20 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
-  <title id="title">Охотница</title>
+  <title id="title">Охотница — лучница с колчаном</title>
   <defs>
-    <linearGradient id="r-bg" x1="29" y1="17" x2="225" y2="240" gradientUnits="userSpaceOnUse"><stop stop-color="#205c50"/><stop offset="1" stop-color="#132521"/></linearGradient>
-    <linearGradient id="r-hood" x1="94" y1="29" x2="161" y2="190" gradientUnits="userSpaceOnUse"><stop stop-color="#7da74f"/><stop offset="1" stop-color="#315c3c"/></linearGradient>
+    <linearGradient id="r-bg" x1="24" y1="17" x2="232" y2="240" gradientUnits="userSpaceOnUse"><stop stop-color="#24725b"/><stop offset="1" stop-color="#12231f"/></linearGradient>
+    <linearGradient id="r-cloak" x1="72" y1="154" x2="184" y2="256" gradientUnits="userSpaceOnUse"><stop stop-color="#6f9550"/><stop offset="1" stop-color="#304f37"/></linearGradient>
   </defs>
   <rect width="256" height="256" rx="28" fill="url(#r-bg)"/>
-  <path d="M24 52l58-34-21 59zm208 2-57-35 20 60z" fill="#9acb69" opacity=".14"/>
-  <path d="M21 256c5-53 42-84 84-91h47c43 7 78 38 84 91z" fill="#233932"/>
-  <path d="M81 165l31-14h34l30 14-13 91H94z" fill="#476b4a"/>
-  <path d="M101 139h54v45c-18 17-36 17-54 0z" fill="#b97355"/>
-  <path d="M89 82c4-36 19-57 40-57 26 0 45 24 44 62l-8 55-27 27h-21l-27-28z" fill="#d99973"/>
-  <path d="M73 103c2-52 21-85 57-85 35 0 55 36 54 86l-20-20c-18-17-49-21-74 2z" fill="url(#r-hood)"/>
-  <path d="M84 91c19-23 56-30 83 1-10-7-16-11-22-14-19 11-40 17-61 13z" fill="#5f823d"/>
-  <path d="M98 113l20 3-16 7zm60 0-20 3 16 7z" fill="#26352a"/>
-  <path d="M117 144h24" stroke="#854c3f" stroke-width="5" stroke-linecap="round"/>
-  <path d="M165 82c23 29 23 76 5 108" fill="none" stroke="#b58555" stroke-width="9" stroke-linecap="round"/>
-  <path d="M168 101l14 12-15 10 14 13-15 11 11 14" fill="none" stroke="#d9a46f" stroke-width="4"/>
-  <path d="M78 176l-36 22 16 58h41l12-83zm100 0 36 22-16 58h-41l-11-83z" fill="#6f8b58"/>
+  <path d="M39 224C8 160 17 82 70 33" fill="none" stroke="#d9ad62" stroke-width="8" stroke-linecap="round" opacity=".75"/>
+  <path d="M39 224L70 33" stroke="#ebd7ae" stroke-width="2" opacity=".65"/>
+  <path d="M189 47l12-29m0 30 14-26m-2 36 17-22" stroke="#e9d5a7" stroke-width="5" stroke-linecap="round"/>
+  <path d="M181 54l41 9-20 107-37-9z" fill="#4d382a"/>
+  <path d="M20 256c6-51 42-82 86-91h45c44 9 79 40 85 91z" fill="#20362e"/>
+  <path d="M70 256l16-87 42-18 43 18 16 87z" fill="url(#r-cloak)"/>
+  <path d="M102 141h53v42c-16 18-36 18-53 0z" fill="#b66f50"/>
+  <ellipse cx="128" cy="94" rx="43" ry="66" fill="#dda17c"/>
+  <path d="M86 84c4-41 21-64 43-64 18 0 33 14 40 39-13-8-27-12-42-12-17 0-30 13-41 37z" fill="#8e4933"/>
+  <path d="M162 49c28 6 37 25 31 41-6 15-20 22-36 18 14-13 15-36 5-59z" fill="#a75a38"/>
+  <path d="M166 64c19 5 25 14 24 24-5-7-13-12-24-13z" fill="#e19a59" opacity=".7"/>
+  <path d="M92 93c20-17 47-20 73-6-19 1-40-5-57-15-4 9-9 16-16 21z" fill="#6e372b"/>
+  <path d="M98 111l22 4-18 8zm60 0-22 4 18 8z" fill="#24372d"/>
+  <path d="M101 102l17-3m21 0 16 3" stroke="#6b3d31" stroke-width="5" stroke-linecap="round"/>
+  <path d="M116 145c8 4 16 4 24 0" fill="none" stroke="#8f5042" stroke-width="4" stroke-linecap="round"/>
+  <path d="M78 172l-39 27 17 57h45l20-101zm100 0 38 27-16 57h-45l-20-101z" fill="#567642"/>
+  <path d="M89 177l39 24 39-24" fill="none" stroke="#b2c579" stroke-width="7"/>
+  <path d="M128 201v55" stroke="#d2b56d" stroke-width="5" opacity=".7"/>
 </svg>

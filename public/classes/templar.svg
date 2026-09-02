@@ -1,20 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
-  <title id="title">Жрец</title>
+  <title id="title">Жрец — седой храмовник в светлом облачении</title>
   <defs>
-    <linearGradient id="t-bg" x1="24" y1="17" x2="230" y2="240" gradientUnits="userSpaceOnUse"><stop stop-color="#6d5d35"/><stop offset="1" stop-color="#20201c"/></linearGradient>
-    <linearGradient id="t-cloth" x1="79" y1="157" x2="178" y2="256" gradientUnits="userSpaceOnUse"><stop stop-color="#e2d8b3"/><stop offset="1" stop-color="#897853"/></linearGradient>
+    <linearGradient id="t-bg" x1="22" y1="17" x2="232" y2="241" gradientUnits="userSpaceOnUse"><stop stop-color="#806a32"/><stop offset="1" stop-color="#1f211c"/></linearGradient>
+    <linearGradient id="t-cloth" x1="78" y1="155" x2="180" y2="256" gradientUnits="userSpaceOnUse"><stop stop-color="#eee2b9"/><stop offset="1" stop-color="#756443"/></linearGradient>
   </defs>
   <rect width="256" height="256" rx="28" fill="url(#t-bg)"/>
-  <circle cx="128" cy="65" r="49" fill="none" stroke="#f0c96d" stroke-width="3" opacity=".3"/>
-  <path d="M128 9v20M72 65H51m154 0h-21" stroke="#f0c96d" stroke-width="4" opacity=".45"/>
-  <path d="M17 256c8-49 43-77 88-88h46c45 11 80 39 88 88z" fill="#34322b"/>
-  <path d="M75 256l15-88 38-19 38 19 15 88z" fill="url(#t-cloth)"/>
-  <path d="M101 137h55v48c-17 17-38 17-55 0z" fill="#9e6b52"/>
-  <path d="M86 84c1-37 18-61 43-61 27 0 45 25 43 63l-6 53-29 31h-19l-28-31z" fill="#d29a76"/>
-  <path d="M87 82c4-40 21-60 43-60 22 0 39 20 42 54-25-12-58-10-85 6z" fill="#d3c7aa"/>
-  <path d="M98 111l21 4-17 7zm61 0-21 4 17 7z" fill="#4b4336"/>
-  <path d="M93 128c9 17 12 45 35 58 23-13 27-41 36-58l-2 45-20 29h-28l-20-29z" fill="#d9d0b8"/>
-  <path d="M116 145h25" stroke="#7d5042" stroke-width="4" stroke-linecap="round"/>
-  <path d="M89 172l-47 29 17 55h42l23-103zm78 0 47 29-17 55h-42l-22-103z" fill="#afa071"/>
-  <path d="M128 181v75m-24-49h48" stroke="#f1d17d" stroke-width="6" opacity=".75"/>
+  <circle cx="128" cy="72" r="57" fill="none" stroke="#f5cf69" stroke-width="5" opacity=".35"/>
+  <path d="M128 5v24M66 72H42m172 0h-24" stroke="#f5d77f" stroke-width="5" opacity=".55"/>
+  <path d="M17 256c8-49 43-78 88-88h46c45 10 80 39 88 88z" fill="#302e27"/>
+  <path d="M70 256l17-89 41-18 42 18 17 89z" fill="url(#t-cloth)"/>
+  <path d="M101 139h55v46c-18 18-38 18-55 0z" fill="#a36d51"/>
+  <ellipse cx="128" cy="92" rx="44" ry="66" fill="#d39a72"/>
+  <path d="M87 75c7-35 22-54 42-54 19 0 34 18 41 49-13-7-27-10-41-10-15 0-29 5-42 15z" fill="#c9bea2"/>
+  <path d="M87 73c9-35 24-50 42-50 18 0 32 15 40 45-13-8-27-12-41-12s-28 6-41 17z" fill="#9d927a" opacity=".45"/>
+  <path d="M96 108l25 5-20 9zm63 0-25 5 20 9z" fill="#4b4335"/>
+  <path d="M100 99l18-4m21 0 18 4" stroke="#8b795d" stroke-width="6" stroke-linecap="round"/>
+  <path d="M92 126c8 17 13 49 36 65 24-16 29-48 36-65l-2 58-20 29h-28l-20-29z" fill="#ded6bd"/>
+  <path d="M116 144h25" stroke="#784b3e" stroke-width="4" stroke-linecap="round"/>
+  <path d="M78 172l-40 29 18 55h49l19-103zm100 0 40 29-18 55h-49l-19-103z" fill="#a59667"/>
+  <path d="M128 184v72m-27-44h54" stroke="#f4d477" stroke-width="9" opacity=".9"/>
+  <circle cx="128" cy="211" r="8" fill="#f7e3a3"/>
 </svg>

@@ -1,19 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title">
-  <title id="title">Дикарь</title>
+  <title id="title">Дикарь — могучий воин с боевой раскраской</title>
   <defs>
-    <linearGradient id="m-bg" x1="28" y1="18" x2="224" y2="238" gradientUnits="userSpaceOnUse"><stop stop-color="#6d261f"/><stop offset="1" stop-color="#211817"/></linearGradient>
-    <linearGradient id="m-skin" x1="103" y1="55" x2="151" y2="176" gradientUnits="userSpaceOnUse"><stop stop-color="#d9976e"/><stop offset="1" stop-color="#94533e"/></linearGradient>
+    <linearGradient id="m-bg" x1="20" y1="16" x2="235" y2="242" gradientUnits="userSpaceOnUse"><stop stop-color="#8c2f24"/><stop offset="1" stop-color="#211615"/></linearGradient>
+    <linearGradient id="m-skin" x1="95" y1="50" x2="151" y2="177" gradientUnits="userSpaceOnUse"><stop stop-color="#b96f4c"/><stop offset="1" stop-color="#6f382c"/></linearGradient>
   </defs>
   <rect width="256" height="256" rx="28" fill="url(#m-bg)"/>
-  <circle cx="202" cy="47" r="45" fill="#ed6948" opacity=".13"/>
-  <path d="M18 231c9-46 43-72 82-78h56c40 6 72 32 82 78v25H18z" fill="#322a28"/>
-  <path d="M76 165l28-14h48l29 14-17 91H91z" fill="#5a3930"/>
-  <path d="M99 144h58v43c-18 18-40 18-58 0z" fill="#a9654b"/>
-  <path d="M84 87c0-39 19-62 44-62 29 0 48 25 46 63l-6 51-28 30h-25l-27-30z" fill="url(#m-skin)"/>
-  <path d="M89 83c4-38 22-58 41-58 20 0 37 18 43 48-20-12-54-12-84 10z" fill="#35201c"/>
-  <path d="M96 115l22 5-18 7zm64 0-22 5 18 7z" fill="#251a18"/>
-  <path d="M113 144h31l-5 10h-21z" fill="#512c25"/>
-  <path d="M91 130c10 11 17 38 38 49 22-11 30-38 38-49l-4 36-21 29h-28l-21-29z" fill="#462923"/>
-  <path d="M77 174l-28 17 18 65h32l6-78zm102 0 28 17-18 65h-32l-6-78z" fill="#826050"/>
-  <path d="M48 190l31-17m129 17-31-17" stroke="#e8a06e" stroke-width="4" opacity=".6"/>
+  <circle cx="201" cy="48" r="45" fill="#ff754d" opacity=".14"/>
+  <path d="M190 25l18 8-13 24-18-8zm-6 29l31 14-7 16-32-14z" fill="#bfc1bd" opacity=".75"/>
+  <path d="M18 256c5-55 40-85 88-93h44c48 8 83 38 88 93z" fill="#261c1a"/>
+  <path d="M44 256l13-66 48-29h47l47 29 14 66z" fill="#543229"/>
+  <path d="M92 256l8-91 28-14 28 14 9 91z" fill="#34221f"/>
+  <path d="M99 143h58v43c-17 19-41 19-58 0z" fill="#75412f"/>
+  <ellipse cx="128" cy="91" rx="49" ry="65" fill="url(#m-skin)"/>
+  <path d="M82 86c4-41 21-66 46-66s43 25 47 65c-14-10-29-14-47-14-19 0-34 5-46 15z" fill="#43251f"/>
+  <path d="M100 44c9-12 19-18 29-18 7 0 14 3 20 8-19 3-33 16-40 39z" fill="#d9a05f" opacity=".9"/>
+  <path d="M92 105l30 5-25 12zm72 0-29 5 24 12z" fill="#211615"/>
+  <path d="M99 96l20-4m18 0 20 4" stroke="#3b201b" stroke-width="7" stroke-linecap="round"/>
+  <path d="M128 111l-7 25 13 2" fill="none" stroke="#6d3529" stroke-width="4" stroke-linecap="round"/>
+  <path d="M108 148h40l-8 11h-25z" fill="#321918"/>
+  <path d="M91 132c9 12 17 34 37 44 21-10 30-32 38-44l-3 36-21 25h-28l-20-25z" fill="#38201c"/>
+  <path d="M100 64l11 8-7 20 8 13-10 29" fill="none" stroke="#e8b65f" stroke-width="7" stroke-linecap="round"/>
+  <path d="M56 191l43-30 16 95H67zm144 0-44-30-15 95h48z" fill="#744a39"/>
+  <path d="M71 185l40 29m74-29-40 29" stroke="#c68a57" stroke-width="7" opacity=".75"/>
+  <path d="M78 208c12 7 23 11 34 14m66-14c-12 7-23 11-34 14" fill="none" stroke="#27201e" stroke-width="5"/>
 </svg>

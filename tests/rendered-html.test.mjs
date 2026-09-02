@@ -90,6 +90,9 @@ test("keeps the build catalog in separate valid JSON files", async () => {
 
   for (const classOption of classes) {
     const guide = masteries[classOption.id];
+    const portrait = await readFile(new URL(`../public/${classOption.image}`, import.meta.url), "utf8");
+    assert.match(portrait, /<svg[^>]+viewBox="0 0 256 256"/);
+    assert.match(portrait, new RegExp(`<title[^>]*>${classOption.name}[^<]+<\\/title>`));
     assert.equal(guide.level, 75);
     assert.equal(guide.core.length, 3);
     assert.deepEqual(Object.keys(guide.styles).sort(), [...classOption.styles].sort());
