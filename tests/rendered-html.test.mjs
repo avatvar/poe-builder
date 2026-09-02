@@ -97,12 +97,18 @@ test("keeps the build catalog in separate valid JSON files", async () => {
   }
 });
 
-test("persists the beginner profile and progress locally", async () => {
+test("persists multiple build profiles and migrates the previous save", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /exile-path-progress-v2/);
   assert.match(page, /localStorage\.getItem\(progressKey\)/);
   assert.match(page, /localStorage\.setItem\(progressKey/);
-  assert.match(page, /version: 5/);
+  assert.match(page, /type SavedBuilds = \{ version: 6/);
+  assert.match(page, /saved\?\.version === 5/);
+  assert.match(page, /activeBuildId/);
+  assert.match(page, /builds: next/);
+  assert.match(page, /Мои билды/);
+  assert.match(page, /Новый билд/);
+  assert.match(page, /Удалить билд/);
   assert.match(page, /useState\(1\)/);
   assert.match(page, /Избранный маршрут/);
   assert.match(page, /Дворянка · Грозовой взрыв · уровень 22/);

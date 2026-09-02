@@ -79,8 +79,7 @@ type Catalog = {
 };
 
 type Readiness = { life: number; fire: number; cold: number; lightning: number; links: number; bossesFeelOk: boolean };
-type SavedProgress = {
-  version: 5;
+type BuildData = {
   classId: ClassId;
   styleId: StyleId;
   level: number;
@@ -97,6 +96,9 @@ type SavedProgress = {
   candidateGemText: string;
   completedLabs: string[];
 };
+type LegacySavedProgress = BuildData & { version: 5 };
+type BuildProfile = BuildData & { id: string; createdAt: number; updatedAt: number };
+type SavedBuilds = { version: 6; activeBuildId: string; builds: BuildProfile[] };
 
 const progressKey = "exile-path-progress-v2";
 const dataFiles = {
@@ -112,6 +114,39 @@ const dataFiles = {
   levelCheckpoints: "data/level-checkpoints.json",
 } as const;
 const defaultReadiness: Readiness = { life: 0, fire: 0, cold: 0, lightning: 0, links: 3, bossesFeelOk: false };
+
+function createBuildId() {
+  const suffix = typeof window !== "undefined" && typeof window.crypto?.randomUUID === "function" ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `build-${suffix}`;
+}
+
+function normalizeBuild(catalog: Catalog, source: Partial<BuildData & Pick<BuildProfile, "id" | "createdAt" | "updatedAt">> = {}): BuildProfile {
+  const firstClass = catalog.classes[0];
+  if (!firstClass || !firstClass.styles[0]) throw new Error("Каталог классов пуст");
+  const selectedClass = catalog.classes.find((item) => item.id === source.classId) ?? firstClass;
+  const selectedStyle = selectedClass.styles.includes(source.styleId as StyleId) ? source.styleId as StyleId : selectedClass.styles[0];
+  const now = Date.now();
+  return {
+    id: typeof source.id === "string" && source.id ? source.id : createBuildId(),
+    createdAt: Number(source.createdAt) || now,
+    updatedAt: Number(source.updatedAt) || now,
+    classId: selectedClass.id,
+    styleId: selectedStyle,
+    level: Math.min(100, Math.max(1, Number(source.level) || 1)),
+    act: Math.min(11, Math.max(1, Number(source.act) || 1)),
+    showPlan: Boolean(source.showPlan),
+    completedTaskIds: Array.isArray(source.completedTaskIds) ? source.completedTaskIds : [],
+    linkCount: Math.min(6, Math.max(3, Number(source.linkCount) || 3)),
+    readiness: source.readiness ? { ...defaultReadiness, ...source.readiness } : defaultReadiness,
+    selectedAuras: Array.isArray(source.selectedAuras) ? source.selectedAuras : [catalog.supportTools.recommendedAuras[selectedStyle][0]],
+    totalMana: Math.max(1, Number(source.totalMana) || 500),
+    currentItemText: typeof source.currentItemText === "string" ? source.currentItemText : "",
+    itemText: typeof source.itemText === "string" ? source.itemText : "",
+    currentGemText: typeof source.currentGemText === "string" ? source.currentGemText : "",
+    candidateGemText: typeof source.candidateGemText === "string" ? source.candidateGemText : "",
+    completedLabs: Array.isArray(source.completedLabs) ? source.completedLabs : [],
+  };
+}
 
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(path);
@@ -315,6 +350,8 @@ export default function Home() {
   const [candidateGemText, setCandidateGemText] = useState("");
   const [completedLabs, setCompletedLabs] = useState<string[]>([]);
   const [showAllCheckpoints, setShowAllCheckpoints] = useState(false);
+  const [builds, setBuilds] = useState<BuildProfile[]>([]);
+  const [activeBuildId, setActiveBuildId] = useState("");
 
   const selectedClass = catalog?.classes.find((item) => item.id === classId);
   const selectedStyle = catalog?.styles[styleId];
@@ -324,6 +361,25 @@ export default function Home() {
   const itemComparison = useMemo(() => compareItems(currentItemText, itemText, level, styleId), [currentItemText, itemText, level, styleId]);
   const gemComparison = useMemo(() => compareGems(currentGemText, candidateGemText), [currentGemText, candidateGemText]);
 
+  const loadBuild = useCallback((build: BuildProfile) => {
+    setClassId(build.classId);
+    setStyleId(build.styleId);
+    setLevel(build.level);
+    setAct(build.act);
+    setShowPlan(build.showPlan);
+    setCompletedTaskIds(build.completedTaskIds);
+    setLinkCount(build.linkCount);
+    setReadiness(build.readiness);
+    setSelectedAuras(build.selectedAuras);
+    setTotalMana(build.totalMana);
+    setCurrentItemText(build.currentItemText);
+    setItemText(build.itemText);
+    setCurrentGemText(build.currentGemText);
+    setCandidateGemText(build.candidateGemText);
+    setCompletedLabs(build.completedLabs);
+    setShowAllCheckpoints(false);
+  }, []);
+
   const requestCatalog = useCallback(async () => {
     setLoadState("loading");
     try {
@@ -331,33 +387,34 @@ export default function Home() {
       const firstClass = nextCatalog.classes[0];
       if (!firstClass || !firstClass.styles[0]) throw new Error("Каталог классов пуст");
       if (!nextCatalog.levelCheckpoints[0]) throw new Error("Маршрут контрольных точек пуст");
-      let saved: Partial<SavedProgress> | null = null;
-      try { saved = JSON.parse(window.localStorage.getItem(progressKey) ?? "null") as Partial<SavedProgress> | null; } catch { saved = null; }
-      const hasSavedProgress = saved?.version === 5;
-      const savedClass = hasSavedProgress ? nextCatalog.classes.find((item) => item.id === saved?.classId) ?? firstClass : firstClass;
-      const savedStyle = hasSavedProgress && savedClass.styles.includes(saved?.styleId as StyleId) ? saved?.styleId as StyleId : savedClass.styles[0];
+      let saved: Partial<SavedBuilds | LegacySavedProgress> | null = null;
+      try { saved = JSON.parse(window.localStorage.getItem(progressKey) ?? "null") as Partial<SavedBuilds | LegacySavedProgress> | null; } catch { saved = null; }
 
+      let nextBuilds: BuildProfile[];
+      let nextActiveBuildId: string;
+      if (saved?.version === 6 && "builds" in saved && Array.isArray(saved.builds) && saved.builds.length > 0) {
+        nextBuilds = saved.builds.map((build) => normalizeBuild(nextCatalog, build));
+        nextActiveBuildId = typeof saved.activeBuildId === "string" && nextBuilds.some((build) => build.id === saved.activeBuildId) ? saved.activeBuildId : nextBuilds[0].id;
+      } else if (saved?.version === 5) {
+        const migrated = normalizeBuild(nextCatalog, saved);
+        nextBuilds = [migrated];
+        nextActiveBuildId = migrated.id;
+      } else {
+        const initial = normalizeBuild(nextCatalog);
+        nextBuilds = [initial];
+        nextActiveBuildId = initial.id;
+      }
+
+      const activeBuild = nextBuilds.find((build) => build.id === nextActiveBuildId) ?? nextBuilds[0];
       setCatalog(nextCatalog);
-      setClassId(savedClass.id);
-      setStyleId(savedStyle);
-      setLevel(hasSavedProgress ? Math.min(100, Math.max(1, Number(saved?.level) || 1)) : 1);
-      setAct(hasSavedProgress ? Math.min(11, Math.max(1, Number(saved?.act) || 1)) : 1);
-      setShowPlan(hasSavedProgress ? Boolean(saved?.showPlan) : false);
-      setCompletedTaskIds(hasSavedProgress && Array.isArray(saved?.completedTaskIds) ? saved.completedTaskIds : []);
-      setLinkCount(hasSavedProgress ? Math.min(6, Math.max(3, Number(saved?.linkCount) || 3)) : 3);
-      setReadiness(hasSavedProgress && saved?.readiness ? { ...defaultReadiness, ...saved.readiness } : defaultReadiness);
-      setSelectedAuras(hasSavedProgress && Array.isArray(saved?.selectedAuras) ? saved.selectedAuras : [nextCatalog.supportTools.recommendedAuras[savedStyle][0]]);
-      setTotalMana(Math.max(1, Number(saved?.totalMana) || 500));
-      setCurrentItemText(hasSavedProgress && typeof saved?.currentItemText === "string" ? saved.currentItemText : "");
-      setItemText(hasSavedProgress && typeof saved?.itemText === "string" ? saved.itemText : "");
-      setCurrentGemText(hasSavedProgress && typeof saved?.currentGemText === "string" ? saved.currentGemText : "");
-      setCandidateGemText(hasSavedProgress && typeof saved?.candidateGemText === "string" ? saved.candidateGemText : "");
-      setCompletedLabs(hasSavedProgress && Array.isArray(saved?.completedLabs) ? saved.completedLabs : []);
+      setBuilds(nextBuilds);
+      setActiveBuildId(activeBuild.id);
+      loadBuild(activeBuild);
       setLoadState("ready");
     } catch {
       setLoadState("error");
     }
-  }, []);
+  }, [loadBuild]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("exile-path-theme") as Theme | null;
@@ -374,10 +431,12 @@ export default function Home() {
     return () => window.cancelAnimationFrame(frame);
   }, [requestCatalog]);
   useEffect(() => {
-    if (loadState !== "ready") return;
-    const saved: SavedProgress = { version: 5, classId, styleId, level, act, showPlan, completedTaskIds, linkCount, readiness, selectedAuras, totalMana, currentItemText, itemText, currentGemText, candidateGemText, completedLabs };
+    if (loadState !== "ready" || !activeBuildId) return;
+    const data: BuildData = { classId, styleId, level, act, showPlan, completedTaskIds, linkCount, readiness, selectedAuras, totalMana, currentItemText, itemText, currentGemText, candidateGemText, completedLabs };
+    const next = builds.map((build) => build.id === activeBuildId ? { ...build, ...data, updatedAt: Date.now() } : build);
+    const saved: SavedBuilds = { version: 6, activeBuildId, builds: next };
     window.localStorage.setItem(progressKey, JSON.stringify(saved));
-  }, [act, candidateGemText, classId, completedLabs, completedTaskIds, currentGemText, currentItemText, itemText, level, linkCount, loadState, readiness, selectedAuras, showPlan, styleId, totalMana]);
+  }, [act, activeBuildId, builds, candidateGemText, classId, completedLabs, completedTaskIds, currentGemText, currentItemText, itemText, level, linkCount, loadState, readiness, selectedAuras, showPlan, styleId, totalMana]);
 
   const toggleTheme = () => {
     const next = theme === "light" ? "dark" : "light";
@@ -396,16 +455,48 @@ export default function Home() {
     setShowPlan(true);
     window.setTimeout(() => document.getElementById("plan")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
+  const captureActiveBuild = (build: BuildProfile): BuildProfile => build.id === activeBuildId ? { ...build, classId, styleId, level, act, showPlan, completedTaskIds, linkCount, readiness, selectedAuras, totalMana, currentItemText, itemText, currentGemText, candidateGemText, completedLabs, updatedAt: Date.now() } : build;
+  const selectBuild = (build: BuildProfile) => {
+    if (build.id === activeBuildId) return;
+    setBuilds((current) => current.map(captureActiveBuild));
+    setActiveBuildId(build.id);
+    loadBuild(build);
+  };
+  const createBuild = () => {
+    if (!catalog) return;
+    const nextBuild = normalizeBuild(catalog);
+    setBuilds((current) => [...current.map(captureActiveBuild), nextBuild]);
+    setActiveBuildId(nextBuild.id);
+    loadBuild(nextBuild);
+    window.setTimeout(() => document.querySelector(".class-grid")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  };
+  const deleteBuild = (build: BuildProfile) => {
+    if (builds.length <= 1 || !catalog) return;
+    const buildClass = catalog.classes.find((item) => item.id === build.classId)?.name ?? "этот билд";
+    if (!window.confirm(`Удалить билд «${buildClass}» и весь его сохранённый прогресс?`)) return;
+    const nextBuilds = builds.map(captureActiveBuild).filter((item) => item.id !== build.id);
+    const nextActiveBuildId = build.id === activeBuildId ? nextBuilds[0].id : activeBuildId;
+    const nextActiveBuild = nextBuilds.find((item) => item.id === nextActiveBuildId) ?? nextBuilds[0];
+    setBuilds(nextBuilds);
+    setActiveBuildId(nextActiveBuild.id);
+    if (build.id === activeBuildId) loadBuild(nextActiveBuild);
+  };
   const openFeaturedBuild = () => {
     if (!catalog) return;
     const featuredClass = catalog.classes.find((item) => item.id === "scion");
     if (!featuredClass || !featuredClass.styles.includes("stormburst")) return;
-    setClassId("scion");
-    setStyleId("stormburst");
-    setLevel(22);
-    setAct(2);
-    setShowPlan(true);
-    setSelectedAuras([catalog.supportTools.recommendedAuras.stormburst[0]]);
+    const currentBuilds = builds.map(captureActiveBuild);
+    const existing = currentBuilds.find((build) => build.classId === "scion" && build.styleId === "stormburst");
+    if (existing) {
+      setBuilds(currentBuilds);
+      setActiveBuildId(existing.id);
+      loadBuild({ ...existing, showPlan: true });
+    } else {
+      const featured = normalizeBuild(catalog, { classId: "scion", styleId: "stormburst", level: 22, act: 2, showPlan: true });
+      setBuilds([...currentBuilds, featured]);
+      setActiveBuildId(featured.id);
+      loadBuild(featured);
+    }
     window.setTimeout(() => document.getElementById("plan")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   };
   const toggleTask = (id: string) => setCompletedTaskIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
@@ -483,6 +574,17 @@ export default function Home() {
 
         {loadState === "ready" && catalog && selectedClass && selectedStyle && (
           <div className="builder-card">
+            <div className="build-library">
+              <div className="build-library-heading"><div><span>Мои билды</span><strong>Сохранено билдов: {builds.length}</strong><small>У каждого билда свой класс, уровень, связки и отмеченный прогресс.</small></div><button className="primary-button" type="button" onClick={createBuild}>＋ Новый билд</button></div>
+              <div className="build-list" aria-label="Сохранённые билды">{builds.map((build, index) => {
+                const isActive = build.id === activeBuildId;
+                const displayedBuild = isActive ? { ...build, classId, styleId, level } : build;
+                const buildClass = catalog.classes.find((item) => item.id === displayedBuild.classId);
+                const buildStyle = catalog.styles[displayedBuild.styleId];
+                return <article className={`build-option ${isActive ? "is-active" : ""}`} key={build.id}><button className="build-select" type="button" aria-pressed={isActive} onClick={() => selectBuild(displayedBuild)}><span>Билд {String(index + 1).padStart(2, "0")}</span><strong>{buildClass?.name ?? "Персонаж"}</strong><small>{buildStyle?.name ?? "Стиль не выбран"} · уровень {displayedBuild.level}</small><i>{isActive ? "Активен" : "Открыть"}</i></button>{builds.length > 1 && <button className="build-delete" type="button" aria-label={`Удалить билд ${buildClass?.name ?? index + 1}`} onClick={() => deleteBuild(displayedBuild)}>×</button>}</article>;
+              })}</div>
+            </div>
+            <div className="builder-divider" />
             <div className="featured-build"><div><span>Избранный маршрут</span><strong>Дворянка · Грозовой взрыв · уровень 22</strong><small>Готовый путь с переходом от Искры и уже настроенными подсказками.</small></div><button className="secondary-button" type="button" onClick={openFeaturedBuild}>Открыть билд</button></div>
             <div className="builder-divider" />
             <div className="builder-step"><div className="step-heading"><span className="step-number">01</span><div><h3>Выбери класс</h3><p>Он определит стартовую точку на дереве умений</p></div></div><div className="class-grid" role="group" aria-label="Выбор класса">{catalog.classes.map((item) => <button key={item.id} type="button" className={`class-option ${classId === item.id ? "is-selected" : ""}`} onClick={() => chooseClass(item)} aria-pressed={classId === item.id}><Image className="class-portrait" src={item.image} alt="" width={256} height={256} draggable={false} unoptimized /><span><strong>{item.name}</strong><small>{item.stats}</small></span><i aria-hidden="true">✓</i></button>)}</div></div>
