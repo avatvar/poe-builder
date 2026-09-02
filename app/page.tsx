@@ -6,7 +6,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 type Theme = "light" | "dark";
 type ClassId = "marauder" | "ranger" | "witch" | "duelist" | "templar" | "shadow" | "scion";
-type StyleId = "melee" | "ranged" | "spells" | "minions" | "totems" | "traps" | "poison" | "bleed" | "elemental" | "stormburst" | "spark" | "hybrid";
+type StyleId = "melee" | "ranged" | "spells" | "minions" | "totems" | "traps" | "poison" | "bleed" | "elemental" | "stormburst" | "spark" | "bladeflurry" | "hybrid";
 
 type ClassOption = {
   id: ClassId;
@@ -164,6 +164,8 @@ function getItemStats(text: string) {
   const elementalAverage = [...elementalLine.matchAll(/(\d+)-(\d+)/g)].reduce((sum, match) => sum + (Number(match[1]) + Number(match[2])) / 2, 0);
   const physicalAverage = physical ? (Number(physical[1]) + Number(physical[2])) / 2 : 0;
   const weaponDps = attacks > 0 ? Math.round((physicalAverage + elementalAverage) * attacks) : 0;
+  const physicalWeaponDps = attacks > 0 ? Math.round(physicalAverage * attacks) : 0;
+  const criticalChance = Number(text.match(/Шанс критического удара:\s*([\d.,]+)%/i)?.[1]?.replace(",", ".") ?? 0);
   const spellDamage = [...text.matchAll(/(\d+)%\s+увеличение урона (?:от )?чар/gi)].reduce((sum, match) => sum + Number(match[1]), 0);
   const lightningDamage = [...text.matchAll(/(\d+)%\s+увеличение урона (?:от )?молни(?:ей|и)/gi)].reduce((sum, match) => sum + Number(match[1]), 0);
   const castSpeed = [...text.matchAll(/(\d+)%\s+увеличение скорости сотворения чар/gi)].reduce((sum, match) => sum + Number(match[1]), 0);
@@ -171,7 +173,7 @@ function getItemStats(text: string) {
   const spellPower = spellDamage + lightningDamage + castSpeed * 2 + gemLevels * 30;
   const requirements = text.split(/Требования:/i)[1]?.split(/--------/)[0] ?? "";
   const requiredLevel = Number(requirements.match(/Уровень:\s*(\d+)/i)?.[1] ?? 0);
-  return { name, life, resistances: resistances + allResistance, movement, weaponDps, spellPower, spellDamage, lightningDamage, castSpeed, gemLevels, requiredLevel };
+  return { name, life, resistances: resistances + allResistance, movement, weaponDps, physicalWeaponDps, attacks, criticalChance, spellPower, spellDamage, lightningDamage, castSpeed, gemLevels, requiredLevel };
 }
 
 function isSpellStyle(styleId: StyleId) {
@@ -187,6 +189,11 @@ function analyzeItem(text: string, level: number, styleId: StyleId) {
     if (stats.spellPower > 0) reasons.push({ good: stats.spellPower >= 30, text: `Полезные свойства чар: урон ${stats.spellDamage + stats.lightningDamage}%, скорость ${stats.castSpeed}%, уровни камней +${stats.gemLevels}.` });
     else reasons.push({ good: false, text: "Не найдены урон чар или молнии, скорость сотворения либо уровни подходящих камней." });
     if (stats.weaponDps > 0) reasons.push({ good: false, text: "Физический DPS и скорость атаки оружия не усиливают основное заклинание." });
+  } else if (styleId === "bladeflurry" && stats.physicalWeaponDps > 0) {
+    const target = level < 40 ? 90 : level < 68 ? 220 : 300;
+    reasons.push({ good: stats.physicalWeaponDps >= target, text: `Физический DPS кинжала: примерно ${stats.physicalWeaponDps}; ориентир для этапа — ${target}+.` });
+    reasons.push({ good: stats.attacks >= 1.6, text: `Скорость кинжала: ${stats.attacks || "—"} атаки/с; цель — 1,6+, позднее 1,7+.` });
+    reasons.push({ good: stats.criticalChance >= 8, text: `Базовый шанс критического удара: ${stats.criticalChance || "—"}%; желательно 8%+.` });
   } else if (stats.weaponDps > 0) {
     const target = level < 40 ? 100 : level < 68 ? 250 : 350;
     reasons.push({ good: stats.weaponDps >= target, text: `Суммарный DPS оружия: примерно ${stats.weaponDps}; ориентир для этапа — ${target}+.` });
@@ -208,12 +215,18 @@ function compareItems(currentText: string, candidateText: string, level: number,
   const candidate = getItemStats(candidateText);
   if (!current || !candidate) return null;
   const spellComparison = isSpellStyle(styleId) && (current.spellPower > 0 || candidate.spellPower > 0);
-  const weaponComparison = !isSpellStyle(styleId) && (current.weaponDps > 0 || candidate.weaponDps > 0);
-  const currentScore = spellComparison ? current.spellPower : weaponComparison ? current.weaponDps : current.life + current.resistances * 1.5 + current.movement;
-  const candidateScore = spellComparison ? candidate.spellPower : weaponComparison ? candidate.weaponDps : candidate.life + candidate.resistances * 1.5 + candidate.movement;
+  const bladeFlurryComparison = styleId === "bladeflurry" && (current.physicalWeaponDps > 0 || candidate.physicalWeaponDps > 0);
+  const weaponComparison = !isSpellStyle(styleId) && !bladeFlurryComparison && (current.weaponDps > 0 || candidate.weaponDps > 0);
+  const bladeFlurryScore = (item: typeof current) => item.physicalWeaponDps * (1 + Math.max(0, item.criticalChance - 5) / 20);
+  const currentScore = spellComparison ? current.spellPower : bladeFlurryComparison ? bladeFlurryScore(current) : weaponComparison ? current.weaponDps : current.life + current.resistances * 1.5 + current.movement;
+  const candidateScore = spellComparison ? candidate.spellPower : bladeFlurryComparison ? bladeFlurryScore(candidate) : weaponComparison ? candidate.weaponDps : candidate.life + candidate.resistances * 1.5 + candidate.movement;
   const delta = currentScore > 0 ? Math.round((candidateScore - currentScore) / currentScore * 100) : candidateScore > 0 ? 100 : 0;
   const reasons: Array<{ good: boolean; text: string }> = [];
   if (spellComparison) reasons.push({ good: candidate.spellPower >= current.spellPower, text: `Полезные свойства чар: ${current.spellPower || "—"} → ${candidate.spellPower || "—"} условных очков (${delta >= 0 ? "+" : ""}${delta}%).` });
+  else if (bladeFlurryComparison) {
+    reasons.push({ good: candidate.physicalWeaponDps >= current.physicalWeaponDps, text: `Физический DPS кинжала: ${current.physicalWeaponDps || "—"} → ${candidate.physicalWeaponDps || "—"} (${delta >= 0 ? "+" : ""}${delta}% с учётом крита).` });
+    reasons.push({ good: candidate.criticalChance >= current.criticalChance, text: `Базовый крит: ${current.criticalChance || "—"}% → ${candidate.criticalChance || "—"}%.` });
+  }
   else if (weaponComparison) reasons.push({ good: candidate.weaponDps >= current.weaponDps, text: `DPS оружия: ${current.weaponDps || "—"} → ${candidate.weaponDps || "—"} (${delta >= 0 ? "+" : ""}${delta}%).` });
   if (candidate.life !== current.life) reasons.push({ good: candidate.life >= current.life, text: `Здоровье: +${current.life} → +${candidate.life}.` });
   if (candidate.resistances !== current.resistances) reasons.push({ good: candidate.resistances >= current.resistances, text: `Сумма сопротивлений: ${current.resistances}% → ${candidate.resistances}%.` });
@@ -459,7 +472,7 @@ export default function Home() {
       </header>
 
       <section className="hero" id="top">
-        <div className="hero-copy"><p className="eyebrow"><span /> Путеводитель для новичков</p><h1>Понятный путь развития <em>для любого класса</em></h1><p className="hero-text">Выбери класс, стиль игры и текущий этап — получи короткий маршрут по камням, пассивам и защите без лишней информации.</p><div className="hero-facts" aria-label="Преимущества"><span><b>✓</b> 7 классов</span><span><b>✓</b> 12 стилей игры</span><span><b>✓</b> Прогресс сохраняется</span></div></div>
+        <div className="hero-copy"><p className="eyebrow"><span /> Путеводитель для новичков</p><h1>Понятный путь развития <em>для любого класса</em></h1><p className="hero-text">Выбери класс, стиль игры и текущий этап — получи короткий маршрут по камням, пассивам и защите без лишней информации.</p><div className="hero-facts" aria-label="Преимущества"><span><b>✓</b> 7 классов</span><span><b>✓</b> 13 стилей игры</span><span><b>✓</b> Прогресс сохраняется</span></div></div>
         <aside className="route-preview" aria-label="Пример маршрута развития"><div className="preview-orbit orbit-one" /><div className="preview-orbit orbit-two" /><div className="preview-card preview-card-back"><span>Следующий этап</span><strong>Добавь камень поддержки</strong></div><div className="preview-card preview-card-main"><div className="preview-topline"><span className="preview-level">ТВОЙ УРОВЕНЬ</span><span>МАРШРУТ</span></div><div className="skill-glyph" aria-hidden="true">✦</div><p>Ближайший шаг</p><h2>Навык + поддержка</h2><div className="mini-tags"><span>Связка</span><span>Пассивы</span></div><div className="preview-progress"><i /></div><small>Только советы для текущего этапа</small></div><span className="floating-note note-one">+ защита</span><span className="floating-note note-two">+ урон</span></aside>
       </section>
 
@@ -550,6 +563,7 @@ export default function Home() {
 
             <ToolPanel number="07" title="Сравнение двух предметов" subtitle={itemComparison?.verdict ?? itemAnalysis?.verdict ?? "Вставь текущий предмет и кандидата"}>
               {styleId === "stormburst" && <p className="tool-note"><b>Оружие для билда:</b> жезл или скипетр со щитом. Ищи уровни камней молнии или физических чар, урон чар, скорость сотворения и добавленный урон к чарам; физический DPS оружия не работает.</p>}
+              {styleId === "bladeflurry" && <p className="tool-note"><b>Два кинжала:</b> Шквал клинков поочерёдно использует обе руки, поэтому проверяй каждый кинжал отдельно. С 65 уровня Bino&apos;s Kitchen Knife — удобная отправная точка; позднее ищи редкие кинжалы с 300+ физического DPS, 1,7+ атаки в секунду и 8%+ базового крита.</p>}
               <div className="compare-inputs"><label className="item-input"><span>Сейчас надето</span><textarea value={currentItemText} onChange={(event) => setCurrentItemText(event.target.value)} placeholder="Скопируй текущий предмет из игры…" rows={7} /></label><label className="item-input"><span>Кандидат на замену</span><textarea value={itemText} onChange={(event) => setItemText(event.target.value)} placeholder="Скопируй новый предмет из игры…" rows={7} /></label></div>
               {itemComparison ? <div className={`item-verdict verdict-${itemComparison.tone}`}><strong>{itemComparison.verdict}</strong><p className="comparison-name">{itemComparison.currentName} <span>→</span> {itemComparison.candidateName}</p><ul>{itemComparison.reasons.map((reason) => <li key={reason.text}><span>{reason.good ? "✓" : "!"}</span>{reason.text}</li>)}</ul><small>Оценка предварительная: особые свойства и механики билда могут изменить результат.</small></div> : itemAnalysis ? <div className={`item-verdict verdict-${itemAnalysis.tone}`}><strong>{itemAnalysis.verdict}</strong><ul>{itemAnalysis.reasons.map((reason) => <li key={reason.text}><span>{reason.good ? "✓" : "!"}</span>{reason.text}</li>)}</ul><small>Добавь текущий предмет, чтобы увидеть прямое сравнение.</small></div> : <p className="empty-helper">Можно начать только с кандидата — сайт даст предварительную оценку, а после второго описания сравнит их напрямую.</p>}
             </ToolPanel>

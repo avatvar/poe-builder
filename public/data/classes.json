@@ -99,19 +99,21 @@
     "name": "Бандит",
     "short": "БН",
     "image": "classes/shadow.svg",
-    "fantasy": "Ловушки и быстрые удары",
+    "fantasy": "Тени и быстрые удары",
     "stats": "Ловкость · Интеллект",
     "styles": [
+      "bladeflurry",
       "traps",
       "spells",
       "poison"
     ],
     "ascendancies": {
+      "bladeflurry": "Убийца · Assassin",
       "traps": "Диверсант",
       "spells": "Хитрец",
       "poison": "Убийца"
     },
-    "passiveFocus": "шанс критического удара, уклонение, подавление чар"
+    "passiveFocus": "критические удары, кинжалы, уклонение и подавление чар"
   },
   {
     "id": "scion",

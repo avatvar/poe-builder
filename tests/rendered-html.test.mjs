@@ -69,6 +69,14 @@ test("keeps the build catalog in separate valid JSON files", async () => {
   assert.deepEqual(gems.stormburst.mainByStage, ["Искра", "Грозовой взрыв", "Грозовой взрыв", "Грозовой взрыв"]);
   assert.deepEqual(gems.stormburst.supports.slice(0, 2), ["Физический урон в молнию", "Ускоренное сотворение чар"]);
   assert.equal(beginners.transitions.stormburst.level, 22);
+  const shadow = classes.find((classOption) => classOption.id === "shadow");
+  assert.ok(shadow?.styles.includes("bladeflurry"));
+  assert.equal(shadow?.ascendancies.bladeflurry, "Убийца · Assassin");
+  assert.equal(styles.bladeflurry.name, "Шквал клинков");
+  assert.deepEqual(gems.bladeflurry.mainByStage, ["Морозные клинки", "Шквал клинков", "Шквал клинков", "Ваал Шквал клинков"]);
+  assert.equal(beginners.transitions.bladeflurry.level, 28);
+  assert.match(passives.bladeflurry.keystone, /Magebane/);
+  assert.ok(masteries.shadow.styles.bladeflurry.some((mastery) => mastery.effect.includes("за каждый используемый кинжал")));
 
   for (const style of Object.values(styles)) {
     assert.equal(style.stages.length, 4);

@@ -10,7 +10,8 @@
     "clarity": { "name": "Ясность ума", "reservation": 15, "purpose": "мана" },
     "purity_elements": { "name": "Чистота стихий", "reservation": 50, "purpose": "сопротивления и защита от стихийных состояний" },
     "malevolence": { "name": "Злорадство", "reservation": 50, "purpose": "постепенный урон" },
-    "vitality": { "name": "Живучесть", "reservation": 15, "purpose": "регенерация" }
+    "vitality": { "name": "Живучесть", "reservation": 15, "purpose": "регенерация" },
+    "petrified_blood": { "name": "Окаменевшая кровь · Petrified Blood", "reservation": 35, "purpose": "сглаживание урона на малом количестве здоровья" }
   },
   "recommendedAuras": {
     "melee": ["determination", "blood_sand", "pride"],
@@ -24,6 +25,7 @@
     "elemental": ["anger", "grace", "haste"],
     "stormburst": ["clarity", "vitality", "purity_elements", "wrath"],
     "spark": ["wrath", "clarity", "determination"],
+    "bladeflurry": ["purity_elements", "petrified_blood", "blood_sand"],
     "hybrid": ["anger", "determination", "clarity"]
   },
   "flasks": {
@@ -38,6 +40,7 @@
     "elemental": ["Мгновенный флакон жизни", "Ртутный флакон", "Нефритовый флакон", "Серебряный флакон", "Аметистовый флакон"],
     "stormburst": ["Мгновенный флакон жизни", "Ртутный флакон", "Флакон маны", "Гранитный флакон", "Нефритовый флакон"],
     "spark": ["Мгновенный флакон жизни", "Ртутный флакон", "Флакон маны", "Алмазный флакон", "Аметистовый флакон"],
+    "bladeflurry": ["Мгновенный флакон жизни", "Нефритовый флакон", "Гранитный флакон", "Алмазный флакон", "Аметистовый флакон"],
     "hybrid": ["Мгновенный флакон жизни", "Ртутный флакон", "Флакон маны", "Гранитный флакон", "Серебряный флакон"]
   }
 }
