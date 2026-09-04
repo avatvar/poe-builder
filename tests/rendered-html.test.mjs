@@ -21,6 +21,7 @@ test("renders the Exile Path builder", async () => {
 
   const html = await response.text();
   assert.match(html, /Exile Path/);
+  assert.match(html, /rel="icon" href="favicon\.svg" type="image\/svg\+xml"/);
   assert.match(html, /Понятный путь развития/);
   assert.match(html, /для любого класса/);
   assert.match(html, /Выбери класс, стиль и этап/);

@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ru" suppressHydrationWarning><body className={`${manrope.variable} ${unbounded.variable}`}>{children}</body></html>;
+  return <html lang="ru" suppressHydrationWarning><head><link rel="icon" href="favicon.svg" type="image/svg+xml" /></head><body className={`${manrope.variable} ${unbounded.variable}`}>{children}</body></html>;
 }
